@@ -1,0 +1,74 @@
+/*
+ * Nigerian Government palette → Carbon Design System theme tokens.
+ * Applied on .cds--white (body) so every @carbon/react component inherits these colors.
+ * Source of truth for custom tokens: NIGERIAN_GOVERNMENT_COLORS.md
+ */
+.cds--white {
+  /* Brand & interactive — Nigerian Green */
+  --cds-button-primary: var(--color-primary);
+  --cds-button-primary-hover: var(--color-primary-dark);
+  --cds-button-primary-active: var(--color-primary-dark);
+  --cds-button-tertiary: var(--color-primary);
+  --cds-button-tertiary-hover: var(--color-primary-dark);
+  --cds-button-tertiary-active: var(--color-primary-dark);
+  --cds-focus: var(--color-primary);
+  --cds-border-interactive: var(--color-primary);
+  --cds-interactive: var(--color-primary);
+  --cds-link-primary: var(--color-primary);
+  --cds-link-primary-hover: var(--color-primary-dark);
+  --cds-icon-interactive: var(--color-primary);
+  --cds-background-brand: var(--color-primary);
+  --cds-highlight: rgba(0, 135, 81, 0.12);
+
+  /* Text */
+  --cds-text-primary: var(--color-ink);
+  --cds-text-secondary: var(--color-ink-muted);
+  --cds-text-placeholder: var(--color-ink-subtle);
+  --cds-icon-primary: var(--color-ink);
+  --cds-icon-secondary: var(--color-ink-muted);
+
+  /* Surfaces */
+  --cds-background: var(--color-canvas);
+  --cds-layer-01: #fafafa;
+  --cds-layer-02: var(--color-canvas);
+  --cds-layer-03: var(--color-surface-1);
+  --cds-layer-hover-01: #f4f4f4;
+  --cds-layer-hover-02: #f4f4f4;
+  --cds-layer-hover-03: var(--color-surface-2);
+  --cds-layer-background-01: var(--color-canvas);
+  --cds-layer-background-02: var(--color-surface-1);
+  --cds-layer-background-03: var(--color-canvas);
+  --cds-field-01: var(--color-surface-1);
+  --cds-field-02: var(--color-canvas);
+  --cds-field-03: var(--color-surface-1);
+  --cds-field-hover-01: var(--color-surface-2);
+  --cds-field-hover-02: var(--color-surface-1);
+  --cds-field-hover-03: var(--color-surface-2);
+
+  /* Borders */
+  --cds-border-subtle-00: var(--color-hairline);
+  --cds-border-subtle-01: var(--color-hairline);
+  --cds-border-subtle-02: var(--color-hairline);
+  --cds-border-subtle-03: var(--color-hairline);
+  --cds-border-tile-01: var(--color-hairline);
+  --cds-border-tile-02: var(--color-hairline);
+  --cds-border-tile-03: var(--color-hairline);
+  --cds-border-strong-01: var(--color-hairline-strong);
+  --cds-border-strong-02: var(--color-hairline-strong);
+  --cds-border-strong-03: var(--color-hairline-strong);
+
+  /* Semantic */
+  --cds-support-error: var(--color-error);
+  --cds-support-success: var(--color-success);
+  --cds-support-warning: var(--color-warning);
+  --cds-support-info: var(--color-info);
+  --cds-button-danger-primary: var(--color-error);
+  --cds-button-danger-secondary: var(--color-error);
+
+  /* Inverse surfaces (footer, dark UI) */
+  --cds-background-inverse: var(--color-inverse-canvas);
+  --cds-background-inverse-hover: var(--color-inverse-surface-1);
+  --cds-border-inverse: var(--color-inverse-surface-1);
+  --cds-icon-inverse: var(--color-canvas);
+  --cds-text-inverse: var(--color-canvas);
+}

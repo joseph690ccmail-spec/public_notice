@@ -1,26 +1,73 @@
+/*
+ * Stylesheet architecture
+ * ─────────────────────
+ * 1. Tailwind CSS      — page layout, spacing, typography utilities
+ * 2. Carbon (base layer) — full @carbon/styles; MUST sit below Tailwind utilities
+ *                          or Carbon's global reset overrides px-*, flex, gap, etc.
+ * 3. carbon-theme.css  — Nigerian palette → Carbon --cds-* tokens
+ * 4. carbon-overrides  — per-component tweaks for this project
+ *
+ * To add a new Carbon component: import it from @carbon/react in your page.
+ * Colors are automatic via .cds--white on <body>. Component-specific
+ * adjustments go in carbon-overrides.css.
+ */
+
+@layer theme, base, components, utilities;
+
 @import "tailwindcss";
 
+/* Carbon in the base layer — below Tailwind utilities so layout classes (px-6, flex, etc.) are not zeroed out */
+@import "@carbon/styles/css/styles.css" layer(base);
+
+/* Nigerian custom tokens (used by Tailwind + Carbon theme bridge) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --color-primary: #008751;
+  --color-primary-dark: #005c38;
+  --color-primary-light: #00a86b;
+  --color-accent: #c4963a;
+  --color-accent-dark: #8b6914;
+  --color-eagle-red: #b91c1c;
+
+  --color-canvas: #ffffff;
+  --color-surface-1: #f8fafc;
+  --color-surface-2: #f1f5f9;
+  --color-hairline: #e2e8f0;
+  --color-hairline-strong: #cbd5e1;
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-ink-subtle: #64748b;
+  --color-inverse-canvas: #0f172a;
+  --color-inverse-surface-1: #1e2937;
+
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --color-info: #1d4ed8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@import "./carbon-theme.css";
+@import "./carbon-overrides.css";
+
+/* Site base — unlayered, overrides Carbon body reset */
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-plex-sans), system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.card {
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: 0;
 }

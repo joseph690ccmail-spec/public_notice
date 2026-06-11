@@ -1,0 +1,73 @@
+/*
+ * Project-specific Carbon component tweaks.
+ * Add new component adjustments here as you adopt more @carbon/react components.
+ */
+
+/* Carbon button with renderIcon — wide label-to-icon gap */
+.cds--btn:not(.cds--btn--icon-only) {
+  position: relative;
+  inline-size: max-content;
+  flex-shrink: 0;
+  padding-inline-start: calc(
+    var(--cds-layout-density-padding-inline-local, 1rem) - 0.0625rem
+  );
+  padding-inline-end: calc(
+    var(--cds-layout-density-padding-inline-local, 1rem) * 3 + 1rem - 0.0625rem
+  );
+}
+
+.cds--btn:not(.cds--btn--icon-only) .cds--btn__icon {
+  position: absolute;
+  flex-shrink: 0;
+  block-size: 1rem;
+  inline-size: 1rem;
+  inset-block-start: min(
+    (var(--cds-layout-size-height-local, 2.5rem) - 1rem) / 2 - 0.0625rem,
+    var(--temp-padding-block-max, 0.5rem)
+  );
+  inset-inline-end: var(--cds-layout-density-padding-inline-local, 1rem);
+  margin: 0;
+}
+
+/* Quick-action ClickableTiles — borderless, soft background, taller */
+.quick-actions-grid .cds--tile {
+  background-color: #fafafa;
+  border: none;
+  box-shadow: none;
+  min-block-size: 11rem;
+  padding-block: 2rem;
+  padding-inline: 1.5rem;
+}
+
+.quick-actions-grid .cds--tile--clickable:hover,
+.quick-actions-grid .cds--tile--clickable:focus {
+  background-color: #f4f4f4;
+  border: none;
+}
+
+.quick-actions-grid .cds--tile--clickable:hover h3,
+.quick-actions-grid .cds--tile--clickable:focus h3 {
+  color: var(--color-primary);
+}
+
+.quick-actions-grid .cds--tile--clickable {
+  block-size: 100%;
+}
+
+/* Utility bar — ghost icon button on dark green, white hamburger */
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost {
+  color: #ffffff;
+}
+
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost svg,
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost svg path,
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost .cds--btn__icon,
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost .cds--btn__icon path {
+  fill: #ffffff;
+}
+
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost:hover,
+.utility-bar .utility-bar__menu-btn.cds--btn--ghost:focus {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
