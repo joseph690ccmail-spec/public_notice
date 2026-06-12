@@ -1,6 +1,7 @@
 import type { ZodType } from "zod";
 import type { RateLimitTier } from "@/lib/security/constants";
 import {
+  adminLoginBodySchema,
   draftAbandonBodySchema,
   draftInitBodySchema,
   draftPatchBodySchema,
@@ -100,6 +101,19 @@ export const API_ROUTE_SECURITY = {
     methods: ["POST"],
     rateLimit: "affidavitVerify",
     acceptsMultipart: true,
+  },
+  "POST /api/v1/admin/login": {
+    methods: ["POST"],
+    rateLimit: "adminLogin",
+    bodySchema: adminLoginBodySchema,
+  },
+  "POST /api/v1/admin/logout": {
+    methods: ["POST"],
+    rateLimit: "global",
+  },
+  "GET /api/v1/admin/session": {
+    methods: ["GET"],
+    rateLimit: "global",
   },
 } as const satisfies Record<string, RouteSecurityProfile>;
 

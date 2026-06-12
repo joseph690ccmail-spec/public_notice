@@ -21,7 +21,10 @@ export function PublishWizard() {
 
   if (wizard.publishedNotice) {
     return (
-      <PublishedSuccessScreen notice={wizard.publishedNotice} email={wizard.form.email} />
+      <PublishedSuccessScreen
+        notice={wizard.publishedNotice}
+        email={wizard.publishedEmail ?? wizard.form.email}
+      />
     );
   }
 

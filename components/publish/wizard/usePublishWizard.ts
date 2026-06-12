@@ -10,6 +10,7 @@ import {
   initializePayment,
   patchDraft,
   pollForPublishedNotice,
+  isUnavailableDraftSessionError,
   PublishApiError,
   sendSaveForLaterLink,
   verifyAffidavitDraft,
@@ -69,10 +70,25 @@ export function usePublishWizard() {
   const [saveLinkSent, setSaveLinkSent] = useState(false);
   const [saveLinkBusy, setSaveLinkBusy] = useState(false);
   const [publishedNotice, setPublishedNotice] = useState<PublicNoticeResponse | null>(null);
+  const [publishedEmail, setPublishedEmail] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [hasStoredSession, setHasStoredSession] = useState(false);
 
   const hasSavedState = Boolean(draftId || hasStoredSession);
+
+  const resetToFreshSession = useCallback((email?: string) => {
+    clearDraftSession();
+    setDraftId(null);
+    setHasAffidavit(false);
+    setDocumentFile(null);
+    setAffidavitVerificationFailed(false);
+    setStep(0);
+    setApiError(null);
+    setHasStoredSession(Boolean(email));
+    if (email) {
+      setForm((prev) => ({ ...prev, email }));
+    }
+  }, []);
 
   const applyDraft = useCallback((draft: DraftResponse, resume?: ResumeDraftOptions) => {
     setDraftId(draft.draftId);
@@ -133,51 +149,73 @@ export function usePublishWizard() {
     return () => window.clearTimeout(timer);
   }, [draftId, form, step, syncDraftFields]);
 
-  const processPaymentReturn = useCallback(async (draft: DraftResponse) => {
-    const reference =
-      searchParams.get("reference")?.trim() ||
-      searchParams.get("trxref")?.trim() ||
-      "";
+  const completePublishedPayment = useCallback((verification: Awaited<ReturnType<typeof verifyPayment>>) => {
+    if (!verification.notice) return false;
 
-    if (!reference) {
-      setApiError("Payment was not completed. You can try again below.");
-      setStep(4);
-      return;
+    setPublishedNotice(verification.notice);
+    if (verification.email) {
+      setPublishedEmail(verification.email);
+      setForm((prev) => ({ ...prev, email: verification.email! }));
     }
+    clearDraftSession();
+    return true;
+  }, []);
 
-    setPublishing(true);
-    setApiError(null);
+  const processPaymentReturn = useCallback(
+    async (reference: string, draftIdToRestore?: string) => {
+      setPublishing(true);
+      setApiError(null);
 
-    try {
-      const verification = await verifyPayment(reference);
-      if (!verification.paid) {
-        setApiError("Payment was not completed. You can try again below.");
-        setStep(4);
-        return;
-      }
+      try {
+        const verification = await verifyPayment(reference);
 
-      const notice = await pollForPublishedNotice(draft.newName ?? "");
-      if (notice) {
-        setPublishedNotice(notice);
-        clearDraftSession();
-      } else {
+        if (!verification.paid) {
+          setApiError("Payment was not completed. You can try again below.");
+          setStep(4);
+          return;
+        }
+
+        if (completePublishedPayment(verification)) {
+          return;
+        }
+
+        const fallbackName =
+          verification.notice?.newName ??
+          (draftIdToRestore
+            ? (await getDraft(draftIdToRestore).catch(() => null))?.newName
+            : null) ??
+          form.newName;
+
+        const notice = fallbackName ? await pollForPublishedNotice(fallbackName) : null;
+        if (notice) {
+          setPublishedNotice(notice);
+          if (verification.email) {
+            setPublishedEmail(verification.email);
+            setForm((prev) => ({ ...prev, email: verification.email! }));
+          }
+          clearDraftSession();
+          return;
+        }
+
         setApiError(
           "Payment received. Your notice is being published — check your email shortly for your PNN."
         );
+        setStep(4);
+      } catch (error) {
+        const message =
+          error instanceof PublishApiError
+            ? error.code === "NOT_FOUND"
+              ? "We could not find this payment reference. If you completed payment, check your email for your PNN."
+              : error.message
+            : "Could not verify payment. Please try again.";
+        setApiError(message);
+        setStep(4);
+      } finally {
+        setPublishing(false);
       }
-    } catch (error) {
-      const message =
-        error instanceof PublishApiError
-          ? error.code === "NOT_FOUND"
-            ? "Payment was not completed. You can try again below."
-            : error.message
-          : "Could not verify payment. Please try again.";
-      setApiError(message);
-      setStep(4);
-    } finally {
-      setPublishing(false);
-    }
-  }, [searchParams]);
+    },
+    [completePublishedPayment, form.newName]
+  );
 
   useEffect(() => {
     if (!draftId) return;
@@ -209,33 +247,50 @@ export function usePublishWizard() {
 
     (async () => {
       setBusy(true);
+      const paymentReference =
+        searchParams.get("reference")?.trim() ||
+        searchParams.get("trxref")?.trim() ||
+        "";
+
       try {
+        if (isPaymentReturn && paymentReference) {
+          await processPaymentReturn(paymentReference, draftIdToRestore);
+          return;
+        }
+
         const draft = await getDraft(draftIdToRestore);
         applyDraft(draft, {
           inferStep: true,
           paymentReturn: isPaymentReturn,
           storedStep: stored?.step,
         });
-
-        if (isPaymentReturn) {
-          await processPaymentReturn(draft);
-        }
       } catch (error) {
+        if (isUnavailableDraftSessionError(error)) {
+          resetToFreshSession(stored?.email);
+          return;
+        }
+
         if (stored?.email) {
           setForm((prev) => ({ ...prev, email: stored.email }));
           setHasStoredSession(true);
         }
 
+        if (isPaymentReturn && paymentReference) {
+          await processPaymentReturn(paymentReference, draftIdToRestore);
+          return;
+        }
+
         if (isPaymentReturn) {
           setStep(4);
-          setApiError(
-            error instanceof PublishApiError
-              ? error.code === "NOT_FOUND"
-                ? "Payment was not completed. You can try again below."
-                : error.message
-              : "Could not restore your application. Please use your resume link or start again."
-          );
+          setApiError("Payment was not completed. You can try again below.");
+          return;
         }
+
+        setApiError(
+          error instanceof PublishApiError
+            ? error.message
+            : "Could not restore your application. Please use your resume link or start again."
+        );
       } finally {
         setBusy(false);
         if (shouldCleanUrl) {
@@ -243,7 +298,7 @@ export function usePublishWizard() {
         }
       }
     })();
-  }, [applyDraft, processPaymentReturn, router, searchParams]);
+  }, [applyDraft, processPaymentReturn, resetToFreshSession, router, searchParams]);
 
   useEffect(() => {
     if (!documentFile) {
@@ -548,6 +603,7 @@ export function usePublishWizard() {
     saveLinkSent,
     saveLinkBusy,
     publishedNotice,
+    publishedEmail,
     publishing,
     hasSavedState,
     fileInputRef,

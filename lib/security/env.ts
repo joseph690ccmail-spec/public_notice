@@ -37,6 +37,14 @@ const envSchema = z.object({
 
   /** Groq API key for AI affidavit verification (server-side only). */
   GROQ_AI_KEY: z.string().optional(),
+
+  /** HMAC secret for signed admin session cookies. */
+  ADMIN_SESSION_SECRET: z.string().optional(),
+
+  /** Seed credentials for the initial super admin (`npm run db:seed`). */
+  SUPER_ADMIN_EMAIL: z.string().optional(),
+  SUPER_ADMIN_PASSWORD: z.string().optional(),
+  SUPER_ADMIN_NAME: z.string().optional(),
 });
 
 export type SecurityEnv = z.infer<typeof envSchema>;

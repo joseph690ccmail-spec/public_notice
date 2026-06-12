@@ -44,6 +44,11 @@ enum AffidavitVerdict {
   REJECTED
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
 /// Guest application — draftId is the session token. Email captured first (step 2).
 model Draft {
   id              String        @id @default(uuid()) @db.Uuid
@@ -129,4 +134,19 @@ model Notice {
   @@index([formerName])
   @@index([newName])
   @@index([email])
+}
+
+/// Back-office operators — super admin is seeded via `npm run db:seed`.
+model Admin {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         AdminRole @default(ADMIN)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role])
 }

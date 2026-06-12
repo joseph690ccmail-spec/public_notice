@@ -24,6 +24,15 @@ export class PublishApiError extends Error {
   }
 }
 
+/** Draft is missing or no longer in progress (e.g. already published). */
+export function isUnavailableDraftSessionError(error: unknown): boolean {
+  return (
+    error instanceof PublishApiError &&
+    error.code === "NOT_FOUND" &&
+    error.message === "Draft session not found."
+  );
+}
+
 type ApiFetchOptions = RequestInit & {
   bindDraft?: boolean;
   json?: unknown;

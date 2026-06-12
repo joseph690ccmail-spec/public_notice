@@ -2,7 +2,12 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowRight } from "@carbon/icons-react";
+import {
+  ArrowRight,
+  DocumentMultiple_02,
+  IbmEloPublishing,
+  IbmKnowledgeCatalogStandard,
+} from "@carbon/icons-react";
 import { Button, ClickableTile } from "@carbon/react";
 import { HomeModals } from "@/components/home/HomeModals";
 import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
@@ -244,6 +249,11 @@ export default function PublicNoticeSystem() {
               setPublishOpen(true);
             }}
           >
+            <IbmEloPublishing
+              size={32}
+              aria-hidden
+              className="mb-3 text-[var(--color-primary)]"
+            />
             <h3 className="text-xl font-medium tracking-tight mb-2 transition-colors">
               Publish a Notice
             </h3>
@@ -264,6 +274,11 @@ export default function PublicNoticeSystem() {
                 openVerify();
               }}
             >
+            <IbmKnowledgeCatalogStandard
+              size={32}
+              aria-hidden
+              className="mb-3 text-[var(--color-primary)]"
+            />
             <h3 className="text-xl font-medium tracking-tight mb-2 transition-colors">
               Verify a Notice
             </h3>
@@ -279,8 +294,13 @@ export default function PublicNoticeSystem() {
             renderIcon={ArrowRight}
             title="Recent Publications"
           >
+            <DocumentMultiple_02
+              size={32}
+              aria-hidden
+              className="mb-3 text-[var(--color-primary)]"
+            />
             <h3 className="text-xl font-medium tracking-tight mb-2 transition-colors">
-              Recent Publications
+              View Notices
             </h3>
             <p className="text-sm text-[var(--color-ink-muted)] leading-relaxed">
               Browse the most recently published public notices.

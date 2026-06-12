@@ -1,8 +1,10 @@
 import type { NextRequest } from "next/server";
-import type { TransactionStatus } from "@prisma/client";
+import type { Notice, Transaction, TransactionStatus } from "@prisma/client";
 import { ApiError } from "@/lib/api/errors";
 import { requireDraftAccess } from "@/lib/drafts/access";
 import { prisma } from "@/lib/db";
+import { toPublicNotice, type PublicNoticeResponse } from "@/lib/notices/dto";
+import { publishNoticeFromPayment } from "@/lib/notices/publish";
 import { CHANGE_OF_NAME_FEE_KOBO } from "@/lib/payments/constants";
 import {
   paystackInitializeTransaction,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/payments/paystack";
 import { generatePaymentReference } from "@/lib/payments/reference";
 import { assertDraftReadyForPayment } from "@/lib/payments/validate-draft";
+import type { PaystackChargeSuccessEvent } from "@/lib/security/payments/paystack-webhook";
 
 export interface PaymentInitializeResult {
   reference: string;
@@ -27,6 +30,64 @@ export interface PaymentVerifyResult {
   draftId: string;
   amountKobo: number;
   currency: string;
+  published: boolean;
+  notice: PublicNoticeResponse | null;
+  email: string | null;
+}
+
+type TransactionWithPublication = Transaction & {
+  notice: Notice | null;
+  draft: { notice: Notice | null } | null;
+};
+
+function resolvePublishedNotice(
+  transaction: TransactionWithPublication
+): { notice: Notice; email: string } | null {
+  const notice = transaction.notice ?? transaction.draft?.notice ?? null;
+  if (!notice) return null;
+  return { notice, email: notice.email };
+}
+
+function buildPaymentVerifyResult(
+  transaction: TransactionWithPublication,
+  status: TransactionStatus,
+  paid: boolean,
+  publication: ReturnType<typeof resolvePublishedNotice>
+): PaymentVerifyResult {
+  return {
+    reference: transaction.reference,
+    status,
+    paid,
+    draftId: transaction.draftId,
+    amountKobo: transaction.amountKobo,
+    currency: transaction.currency,
+    published: Boolean(publication),
+    notice: publication ? toPublicNotice(publication.notice) : null,
+    email: publication?.email ?? null,
+  };
+}
+
+async function loadTransactionWithPublication(
+  reference: string
+): Promise<TransactionWithPublication | null> {
+  return prisma.transaction.findUnique({
+    where: { reference },
+    include: {
+      notice: true,
+      draft: { include: { notice: true } },
+    },
+  });
+}
+
+async function ensureNoticePublished(
+  reference: string,
+  charge: PaystackChargeSuccessEvent["data"]
+): Promise<ReturnType<typeof resolvePublishedNotice>> {
+  await publishNoticeFromPayment(reference, charge);
+
+  const refreshed = await loadTransactionWithPublication(reference);
+  if (!refreshed) return null;
+  return resolvePublishedNotice(refreshed);
 }
 
 export async function initializePayment(
@@ -78,23 +139,26 @@ export async function initializePayment(
 }
 
 export async function verifyPayment(reference: string): Promise<PaymentVerifyResult> {
-  const transaction = await prisma.transaction.findUnique({
-    where: { reference },
-  });
+  const transaction = await loadTransactionWithPublication(reference);
 
   if (!transaction) {
     throw new ApiError("NOT_FOUND", "Payment reference not found.");
   }
 
   if (transaction.status === "SUCCESS") {
-    return {
-      reference: transaction.reference,
-      status: transaction.status,
-      paid: true,
-      draftId: transaction.draftId,
-      amountKobo: transaction.amountKobo,
-      currency: transaction.currency,
-    };
+    let publication = resolvePublishedNotice(transaction);
+    if (!publication) {
+      const paystack = await paystackVerifyTransaction(reference);
+      publication = await ensureNoticePublished(reference, {
+        reference,
+        status: paystack.status,
+        amount: paystack.amount,
+        paid_at: paystack.paid_at,
+        metadata: paystack.metadata,
+      });
+    }
+
+    return buildPaymentVerifyResult(transaction, transaction.status, true, publication);
   }
 
   const paystack = await paystackVerifyTransaction(reference);
@@ -105,6 +169,7 @@ export async function verifyPayment(reference: string): Promise<PaymentVerifyRes
 
   const paid = paystack.status === "success";
   let status: TransactionStatus = transaction.status;
+  let publication = resolvePublishedNotice(transaction);
 
   if (paid) {
     status = "SUCCESS";
@@ -115,6 +180,16 @@ export async function verifyPayment(reference: string): Promise<PaymentVerifyRes
         paidAt: paystack.paid_at ? new Date(paystack.paid_at) : new Date(),
       },
     });
+
+    if (!publication) {
+      publication = await ensureNoticePublished(reference, {
+        reference,
+        status: paystack.status,
+        amount: paystack.amount,
+        paid_at: paystack.paid_at,
+        metadata: paystack.metadata,
+      });
+    }
   } else if (paystack.status === "failed" && transaction.status === "PENDING") {
     status = "FAILED";
     await prisma.transaction.update({
@@ -123,12 +198,5 @@ export async function verifyPayment(reference: string): Promise<PaymentVerifyRes
     });
   }
 
-  return {
-    reference: transaction.reference,
-    status,
-    paid,
-    draftId: transaction.draftId,
-    amountKobo: transaction.amountKobo,
-    currency: transaction.currency,
-  };
+  return buildPaymentVerifyResult(transaction, status, paid, publication);
 }
