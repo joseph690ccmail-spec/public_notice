@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
-import { Breadcrumb, BreadcrumbItem } from "@carbon/react";
+import { Breadcrumb } from "@carbon/react";
+import { AppBreadcrumbItem } from "@/components/site/AppBreadcrumbItem";
 import { UtilityBar } from "./UtilityBar";
 
 export function NoticesPageHeader() {
@@ -8,8 +11,8 @@ export function NoticesPageHeader() {
       <UtilityBar />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
         <Breadcrumb className="notices-page-header__breadcrumb mb-4" noTrailingSlash>
-          <BreadcrumbItem href="/">Home</BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>Notice registry</BreadcrumbItem>
+          <AppBreadcrumbItem href="/">Home</AppBreadcrumbItem>
+          <AppBreadcrumbItem isCurrentPage>Notice registry</AppBreadcrumbItem>
         </Breadcrumb>
         
         <h1

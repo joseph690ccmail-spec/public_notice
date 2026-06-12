@@ -175,6 +175,26 @@ export async function verifyPayment(reference: string): Promise<PaymentVerifyRes
   );
 }
 
+export interface NoticeListResponse {
+  items: PublicNoticeResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export async function listNotices(page: number, limit: number): Promise<NoticeListResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  return apiFetch<NoticeListResponse>(`/api/v1/notices?${params.toString()}`, {
+    bindDraft: false,
+  });
+}
+
 export async function searchNotices(query: string): Promise<{ query: string; items: PublicNoticeResponse[] }> {
   return apiFetch("/api/v1/notices/search", {
     method: "POST",

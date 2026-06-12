@@ -1,7 +1,10 @@
+"use client";
+
 import React from "react";
-import Link from "next/link";
 import { ArrowLeft } from "@carbon/icons-react";
-import { Breadcrumb, BreadcrumbItem } from "@carbon/react";
+import { Breadcrumb } from "@carbon/react";
+import { AppBreadcrumbItem } from "@/components/site/AppBreadcrumbItem";
+import { NavAnchor } from "@/components/site/NavAnchor";
 import { UtilityBar } from "./UtilityBar";
 
 interface PublishPageHeaderProps {
@@ -20,9 +23,9 @@ export function PublishPageHeader({
       <UtilityBar />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
         <Breadcrumb className="publish-page-header__breadcrumb mb-4" noTrailingSlash>
-          <BreadcrumbItem href="/">Home</BreadcrumbItem>
-          <BreadcrumbItem href="/#publish">Publish notice</BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>{currentCrumb}</BreadcrumbItem>
+          <AppBreadcrumbItem href="/">Home</AppBreadcrumbItem>
+          <AppBreadcrumbItem href="/#publish">Publish notice</AppBreadcrumbItem>
+          <AppBreadcrumbItem isCurrentPage>{currentCrumb}</AppBreadcrumbItem>
         </Breadcrumb>
         
         <h1
@@ -34,13 +37,13 @@ export function PublishPageHeader({
         <p className="mt-3 max-w-2xl text-sm tracking-[0.16px] text-[var(--color-ink-muted)] md:text-base">
           {description}
         </p>
-        <Link
+        <NavAnchor
           href="/#publish"
           className="mt-4 inline-flex items-center gap-2 text-sm tracking-[0.16px] text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-dark)]"
         >
           <ArrowLeft size={16} aria-hidden />
           Change service
-        </Link>
+        </NavAnchor>
       </div>
     </header>
   );

@@ -10,6 +10,7 @@ import {
 } from "@carbon/icons-react";
 import { Button, ClickableTile } from "@carbon/react";
 import { HomeModals } from "@/components/home/HomeModals";
+import { NavClickableTile } from "@/components/site/NavClickableTile";
 import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { UtilityBar } from "@/components/site/UtilityBar";
@@ -288,7 +289,7 @@ export default function PublicNoticeSystem() {
             </ClickableTile>
           </div>
 
-          <ClickableTile
+          <NavClickableTile
             href="/notices"
             id="clickable-tile-notices"
             renderIcon={ArrowRight}
@@ -305,7 +306,7 @@ export default function PublicNoticeSystem() {
             <p className="text-sm text-[var(--color-ink-muted)] leading-relaxed">
               Browse the most recently published public notices.
             </p>
-          </ClickableTile>
+          </NavClickableTile>
         </div>
       </section>
 

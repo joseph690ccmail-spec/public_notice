@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRight } from "@carbon/icons-react";
-import { ClickableTile, Search, Tag, Tile } from "@carbon/react";
+import { Search, Tag, Tile } from "@carbon/react";
+import { NavClickableTile } from "@/components/site/NavClickableTile";
+import { useAppNavigation } from "@/components/site/AppNavigationProvider";
 import { filterPublishServices, type PublishService } from "@/lib/services";
 
 interface ServicePickerProps {
@@ -46,9 +47,9 @@ function ServiceCard({
     </div>
   );
 
-  if (isAvailable) {
+  if (isAvailable && service.href) {
     return (
-      <ClickableTile
+      <NavClickableTile
         href={service.href}
         className="service-picker-card h-full text-left"
         title={service.name}
@@ -58,7 +59,7 @@ function ServiceCard({
         }}
       >
         {content}
-      </ClickableTile>
+      </NavClickableTile>
     );
   }
 
@@ -66,7 +67,7 @@ function ServiceCard({
 }
 
 export function ServicePicker({ onSelect }: ServicePickerProps) {
-  const router = useRouter();
+  const { navigate } = useAppNavigation();
   const [query, setQuery] = useState("");
 
   const services = useMemo(() => filterPublishServices(query), [query]);
@@ -74,7 +75,7 @@ export function ServicePicker({ onSelect }: ServicePickerProps) {
   const handleSelect = (service: PublishService) => {
     if (!service.href) return;
     onSelect?.();
-    router.push(service.href);
+    navigate(service.href);
   };
 
   return (

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Checkmark, Printer } from "@carbon/icons-react";
 import { Button } from "@carbon/react";
 import { NoticeCertificate } from "@/components/notices/NoticeCertificate";
+import { useAppNavigation } from "@/components/site/AppNavigationProvider";
 import { LegalDisclaimer } from "@/components/publish/LegalDisclaimer";
 import type { PublicNoticeResponse } from "@/lib/notices/dto";
 import { publicNoticeToCertificateNotice } from "@/lib/notices/mappers";
@@ -16,6 +17,7 @@ interface PublishedSuccessScreenProps {
 }
 
 export function PublishedSuccessScreen({ notice, email }: PublishedSuccessScreenProps) {
+  const { navigate } = useAppNavigation();
   const handlePrint = useCertificatePrint();
   const certificateNotice = publicNoticeToCertificateNotice(notice);
 
@@ -43,7 +45,7 @@ export function PublishedSuccessScreen({ notice, email }: PublishedSuccessScreen
             <Button kind="primary" renderIcon={Printer} onClick={handlePrint}>
               Print certificate
             </Button>
-            <Button kind="secondary" href="/">
+            <Button kind="secondary" onClick={() => navigate("/")}>
               Return home
             </Button>
           </div>

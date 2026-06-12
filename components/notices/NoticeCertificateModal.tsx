@@ -10,12 +10,13 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@carbon/react";
-import type { ChangeOfNameNotice } from "@/lib/notices";
+import type { PublicNoticeResponse } from "@/lib/notices/dto";
+import { publicNoticeToCertificateNotice } from "@/lib/notices/mappers";
 import { useCertificatePrint } from "@/lib/useCertificatePrint";
 import { NoticeCertificate } from "./NoticeCertificate";
 
 interface NoticeCertificateModalProps {
-  notice: ChangeOfNameNotice | null;
+  notice: PublicNoticeResponse | null;
   open: boolean;
   onClose: () => void;
 }
@@ -28,6 +29,8 @@ export function NoticeCertificateModal({
   const handlePrint = useCertificatePrint();
 
   if (!notice) return null;
+
+  const certificateNotice = publicNoticeToCertificateNotice(notice);
 
   return (
     <>
@@ -42,7 +45,7 @@ export function NoticeCertificateModal({
           closeModal={onClose}
         />
         <ModalBody hasScrollingContent className="bg-surface-2 p-4">
-          <NoticeCertificate notice={notice} id="notice-certificate-preview" />
+          <NoticeCertificate notice={certificateNotice} id="notice-certificate-preview" />
         </ModalBody>
         <ModalFooter>
           <Button kind="secondary" onClick={onClose}>
@@ -58,7 +61,7 @@ export function NoticeCertificateModal({
         typeof document !== "undefined" &&
         createPortal(
           <div data-certificate-print-portal className="hidden" aria-hidden="true">
-            <NoticeCertificate notice={notice} id="notice-certificate-print" />
+            <NoticeCertificate notice={certificateNotice} id="notice-certificate-print" />
           </div>,
           document.body
         )}

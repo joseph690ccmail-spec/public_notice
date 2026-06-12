@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans } from "next/font/google";
+import { AppNavigationProvider } from "@/components/site/AppNavigationProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,7 +41,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${plexSans.variable} h-full antialiased`}
     >
-      <body className="cds--white min-h-full flex flex-col">{children}</body>
+      <body className="cds--white min-h-full flex flex-col">
+        <AppNavigationProvider>{children}</AppNavigationProvider>
+      </body>
     </html>
   );
 }
