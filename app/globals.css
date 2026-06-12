@@ -53,6 +53,15 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-canvas: var(--color-canvas);
+  --color-surface-1: var(--color-surface-1);
+  --color-surface-2: var(--color-surface-2);
+  --color-hairline: var(--color-hairline);
+  --color-hairline-strong: var(--color-hairline-strong);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-subtle: var(--color-ink-subtle);
 }
 
 @import "./carbon-theme.css";

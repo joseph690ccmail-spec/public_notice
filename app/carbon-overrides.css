@@ -71,3 +71,114 @@
   background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
+
+/* Footer — inverse surface, Carbon flat */
+.site-footer__link {
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.site-footer__link:hover {
+  color: #ffffff;
+}
+
+.site-footer__link:focus-visible {
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: 2px;
+}
+
+/* Page banner breadcrumb on green header */
+.page-banner__breadcrumb .cds--breadcrumb-item a,
+.page-banner__breadcrumb .cds--breadcrumb-item::after,
+.page-banner__breadcrumb .cds--breadcrumb-item span {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.page-banner__breadcrumb .cds--breadcrumb-item a:hover {
+  color: #ffffff;
+}
+
+.page-banner__breadcrumb .cds--breadcrumb-item--current span {
+  color: #ffffff;
+}
+
+/* Notices page header — light green, dark breadcrumb */
+.notices-page-header__breadcrumb .cds--breadcrumb-item a,
+.notices-page-header__breadcrumb .cds--breadcrumb-item::after {
+  color: var(--color-ink-muted);
+}
+
+.notices-page-header__breadcrumb .cds--breadcrumb-item a:hover {
+  color: var(--color-primary);
+}
+
+.notices-page-header__breadcrumb .cds--breadcrumb-item--current span {
+  color: var(--color-ink);
+}
+
+/* Notice publication cards */
+.notice-card.cds--tile {
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: 0;
+  padding: 1.25rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+@media (min-width: 768px) {
+  .notice-card.cds--tile {
+    padding: 1.5rem;
+  }
+}
+
+.notice-card.cds--tile:hover {
+  border-color: var(--color-primary);
+}
+
+.notice-card__body {
+  text-align: left;
+}
+
+.notices-search-bar .cds--search,
+.notices-search-bar input {
+  width: 100%;
+}
+
+/* Mobile: center Carbon modals (default pins container to top of viewport) */
+@media (max-width: 41.9375rem) {
+  .cds--modal .cds--modal-container {
+    position: relative;
+    inset-block-start: auto;
+    inline-size: calc(100% - 2rem);
+    max-block-size: calc(100dvh - 2rem);
+    margin: 1rem;
+  }
+}
+
+/* Certificate print orchestration — body-level show/hide only */
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  body.printing-certificate > *:not([data-certificate-print-portal]) {
+    display: none !important;
+  }
+
+  body.printing-certificate [data-certificate-print-portal] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--color-canvas) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.printing-certificate #notice-certificate-print footer p {
+    color: var(--color-ink-subtle) !important;
+  }
+}
