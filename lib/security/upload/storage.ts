@@ -1,4 +1,5 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { ApiError } from "@/lib/api/errors";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSecurityEnv, requireEnv } from "@/lib/security/env";
 import type { AllowedAffidavitMime } from "@/lib/security/upload/constants";
@@ -25,7 +26,7 @@ function getR2Client(): S3Client {
 
 export function buildAffidavitObjectKey(draftId: string, extension: string): string {
   const safeExt = extension.replace(/^\./, "").toLowerCase();
-  return `affidavits/${draftId}/${Date.now()}.${safeExt}`;
+  return `affidavits/${draftId}.${safeExt}`;
 }
 
 export function extensionForMime(mime: AllowedAffidavitMime): string {
@@ -78,4 +79,21 @@ export async function createAffidavitPresignedPutUrl(
 
 export function getPrivateBucketName(): string {
   return requireEnv("R2_BUCKET_NAME");
+}
+
+export async function downloadPrivateAffidavit(bucket: string, key: string): Promise<Buffer> {
+  const client = getR2Client();
+  const response = await client.send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    })
+  );
+
+  const bytes = await response.Body?.transformToByteArray();
+  if (!bytes?.length) {
+    throw new ApiError("NOT_FOUND", "Stored affidavit could not be retrieved.");
+  }
+
+  return Buffer.from(bytes);
 }

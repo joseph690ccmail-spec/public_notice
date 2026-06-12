@@ -1,19 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   abandonDraftByEmail,
   discardDraft,
+  getDraft,
   initDraft,
   initializePayment,
   patchDraft,
   pollForPublishedNotice,
   PublishApiError,
   sendSaveForLaterLink,
-  uploadAffidavit,
+  verifyAffidavitDraft,
   verifyPayment,
 } from "@/lib/api/client";
+import {
+  AFFIDAVIT_VERIFY_FAILED_MESSAGE,
+  AFFIDAVIT_VERIFYING_DESCRIPTION,
+} from "@/lib/affidavit-verification/user-messages";
 import {
   clearDraftSession,
   loadDraftSession,
@@ -35,9 +40,17 @@ import {
   type PublishFormErrors,
 } from "@/lib/publish";
 
+interface ResumeDraftOptions {
+  inferStep?: boolean;
+  paymentReturn?: boolean;
+  storedStep?: number;
+}
+
 export function usePublishWizard() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sessionBootstrapped = useRef(false);
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<PublishFormData>(initialPublishFormData);
@@ -49,6 +62,8 @@ export function usePublishWizard() {
   const [busy, setBusy] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [uploadingAffidavit, setUploadingAffidavit] = useState(false);
+  const [verifyingAffidavit, setVerifyingAffidavit] = useState(false);
+  const [affidavitVerificationFailed, setAffidavitVerificationFailed] = useState(false);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [pendingResumeDraft, setPendingResumeDraft] = useState<DraftResponse | null>(null);
   const [saveLinkSent, setSaveLinkSent] = useState(false);
@@ -59,15 +74,23 @@ export function usePublishWizard() {
 
   const hasSavedState = Boolean(draftId || hasStoredSession);
 
-  const applyDraft = useCallback((draft: DraftResponse, resumed = false) => {
+  const applyDraft = useCallback((draft: DraftResponse, resume?: ResumeDraftOptions) => {
     setDraftId(draft.draftId);
     setForm(draftToForm(draft));
     setHasAffidavit(draft.hasAffidavit);
-    saveDraftSession({ draftId: draft.draftId, email: draft.email });
     setHasStoredSession(true);
-    if (resumed) {
-      setStep(inferStepFromDraft(draft));
+
+    if (resume?.inferStep) {
+      const nextStep = inferStepFromDraft(draft, {
+        paymentReturn: resume.paymentReturn,
+        storedStep: resume.storedStep,
+      });
+      setStep(nextStep);
+      saveDraftSession({ draftId: draft.draftId, email: draft.email, step: nextStep });
+      return;
     }
+
+    saveDraftSession({ draftId: draft.draftId, email: draft.email });
   }, []);
 
   const updateField = useCallback(
@@ -110,32 +133,14 @@ export function usePublishWizard() {
     return () => window.clearTimeout(timer);
   }, [draftId, form, step, syncDraftFields]);
 
-  useEffect(() => {
-    const stored = loadDraftSession();
-    if (stored?.email) {
-      setHasStoredSession(true);
-      setForm((prev) => (prev.email ? prev : { ...prev, email: stored.email }));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!documentFile) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(documentFile);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [documentFile]);
-
-  const handlePaymentReturn = useCallback(async () => {
+  const processPaymentReturn = useCallback(async (draft: DraftResponse) => {
     const reference =
       searchParams.get("reference")?.trim() ||
       searchParams.get("trxref")?.trim() ||
       "";
 
     if (!reference) {
-      setApiError("Payment reference missing. Contact support if you were charged.");
+      setApiError("Payment was not completed. You can try again below.");
       setStep(4);
       return;
     }
@@ -151,7 +156,7 @@ export function usePublishWizard() {
         return;
       }
 
-      const notice = await pollForPublishedNotice(form.newName);
+      const notice = await pollForPublishedNotice(draft.newName ?? "");
       if (notice) {
         setPublishedNotice(notice);
         clearDraftSession();
@@ -161,21 +166,94 @@ export function usePublishWizard() {
         );
       }
     } catch (error) {
-      setApiError(
+      const message =
         error instanceof PublishApiError
-          ? error.message
-          : "Could not verify payment. Please try again."
-      );
+          ? error.code === "NOT_FOUND"
+            ? "Payment was not completed. You can try again below."
+            : error.message
+          : "Could not verify payment. Please try again.";
+      setApiError(message);
       setStep(4);
     } finally {
       setPublishing(false);
     }
-  }, [form.newName, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
-    if (searchParams.get("payment") !== "return") return;
-    handlePaymentReturn();
-  }, [handlePaymentReturn, searchParams]);
+    if (!draftId) return;
+    saveDraftSession({ draftId, email: form.email, step });
+  }, [draftId, form.email, step]);
+
+  useEffect(() => {
+    if (sessionBootstrapped.current) return;
+    sessionBootstrapped.current = true;
+
+    const draftIdFromUrl = searchParams.get("draft")?.trim();
+    const stored = loadDraftSession();
+    const draftIdToRestore = draftIdFromUrl || stored?.draftId;
+    const isPaymentReturn = searchParams.get("payment") === "return";
+    const shouldCleanUrl = Boolean(
+      draftIdFromUrl ||
+        isPaymentReturn ||
+        searchParams.get("reference") ||
+        searchParams.get("trxref")
+    );
+
+    if (!draftIdToRestore) {
+      if (stored?.email) {
+        setHasStoredSession(true);
+        setForm((prev) => (prev.email ? prev : { ...prev, email: stored.email }));
+      }
+      return;
+    }
+
+    (async () => {
+      setBusy(true);
+      try {
+        const draft = await getDraft(draftIdToRestore);
+        applyDraft(draft, {
+          inferStep: true,
+          paymentReturn: isPaymentReturn,
+          storedStep: stored?.step,
+        });
+
+        if (isPaymentReturn) {
+          await processPaymentReturn(draft);
+        }
+      } catch (error) {
+        if (stored?.email) {
+          setForm((prev) => ({ ...prev, email: stored.email }));
+          setHasStoredSession(true);
+        }
+
+        if (isPaymentReturn) {
+          setStep(4);
+          setApiError(
+            error instanceof PublishApiError
+              ? error.code === "NOT_FOUND"
+                ? "Payment was not completed. You can try again below."
+                : error.message
+              : "Could not restore your application. Please use your resume link or start again."
+          );
+        }
+      } finally {
+        setBusy(false);
+        if (shouldCleanUrl) {
+          router.replace("/publish/change-of-name", { scroll: false });
+        }
+      }
+    })();
+  }, [applyDraft, processPaymentReturn, router, searchParams]);
+
+  useEffect(() => {
+    if (!documentFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(documentFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [documentFile]);
 
   const handleFileAdd = useCallback((_: unknown, { addedFiles }: { addedFiles: File[] }) => {
     const file = addedFiles[0];
@@ -199,6 +277,8 @@ export function usePublishWizard() {
 
     setDocumentFile(file);
     setHasAffidavit(false);
+    setAffidavitVerificationFailed(false);
+    setApiError(null);
     setErrors((prev) => {
       const next = { ...prev };
       delete next.document;
@@ -234,6 +314,7 @@ export function usePublishWizard() {
     setDraftId(null);
     setHasAffidavit(false);
     setDocumentFile(null);
+    setAffidavitVerificationFailed(false);
     setSaveLinkSent(false);
     setPendingResumeDraft(null);
     setResumeModalOpen(false);
@@ -283,7 +364,7 @@ export function usePublishWizard() {
         }
 
         const phone = form.phone.trim();
-        applyDraft(draft, true);
+        applyDraft(draft, { inferStep: true, storedStep: loadDraftSession()?.step });
         if (phone) {
           await patchDraft(draft.draftId, { phone });
         }
@@ -349,21 +430,33 @@ export function usePublishWizard() {
 
     if (step === 2) {
       if (!draftId) return;
-      if (documentFile && !hasAffidavit) {
-        setUploadingAffidavit(true);
-        try {
-          const updated = await uploadAffidavit(draftId, documentFile);
-          setHasAffidavit(updated.hasAffidavit);
-        } catch (error) {
-          setApiError(
-            error instanceof PublishApiError ? error.message : "Could not upload your affidavit."
-          );
-          return;
-        } finally {
-          setUploadingAffidavit(false);
-        }
+
+      if (affidavitVerificationFailed) return;
+
+      if (hasAffidavit && !documentFile) {
+        setStep(3);
+        return;
       }
-      setStep(3);
+
+      setVerifyingAffidavit(true);
+      setApiError(null);
+
+      try {
+        const updated = await verifyAffidavitDraft(draftId, documentFile ?? undefined);
+        setHasAffidavit(updated.hasAffidavit);
+        setAffidavitVerificationFailed(false);
+        setStep(3);
+      } catch (error) {
+        setHasAffidavit(false);
+        setAffidavitVerificationFailed(true);
+        setApiError(
+          error instanceof PublishApiError
+            ? error.message
+            : AFFIDAVIT_VERIFY_FAILED_MESSAGE
+        );
+      } finally {
+        setVerifyingAffidavit(false);
+      }
       return;
     }
 
@@ -378,15 +471,17 @@ export function usePublishWizard() {
     documentFile,
     draftId,
     form,
-    hasAffidavit,
     step,
     syncDraftFields,
+    affidavitVerificationFailed,
+    hasAffidavit,
     validateCurrentStep,
   ]);
 
   const goBack = useCallback(() => {
     setErrors({});
     setApiError(null);
+    setAffidavitVerificationFailed(false);
     setStep((current) => Math.max(current - 1, 0));
   }, []);
 
@@ -396,6 +491,7 @@ export function usePublishWizard() {
     setApiError(null);
     try {
       await syncDraftFields(draftId, { ...form, consentGiven: true });
+      saveDraftSession({ draftId, email: form.email, step: 4 });
       const payment = await initializePayment(draftId);
       window.location.href = payment.authorizationUrl;
     } catch (error) {
@@ -425,6 +521,8 @@ export function usePublishWizard() {
   const clearDocument = useCallback(() => {
     setDocumentFile(null);
     setHasAffidavit(false);
+    setAffidavitVerificationFailed(false);
+    setApiError(null);
   }, []);
 
   const replaceDocument = useCallback(() => {
@@ -442,6 +540,9 @@ export function usePublishWizard() {
     busy,
     apiError,
     uploadingAffidavit,
+    verifyingAffidavit,
+    affidavitVerificationFailed,
+    verifyingAffidavitDescription: AFFIDAVIT_VERIFYING_DESCRIPTION,
     resumeModalOpen,
     setResumeModalOpen,
     saveLinkSent,

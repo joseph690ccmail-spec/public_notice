@@ -1,6 +1,8 @@
 import React, { type RefObject } from "react";
+import { CloudUpload } from "@carbon/icons-react";
 import { FileUploaderDropContainer, InlineNotification } from "@carbon/react";
 import { AffidavitPreview } from "@/components/publish/AffidavitPreview";
+import { AffidavitVerificationChecklist } from "@/components/publish/wizard/ui/AffidavitVerificationChecklist";
 import { FieldError } from "@/components/publish/wizard/ui/FieldError";
 import { AFFIDAVIT_ACCEPTED_TYPES } from "@/lib/publish";
 
@@ -34,9 +36,13 @@ export function AffidavitStep({
           Court affidavit
         </h2>
         <p className="mt-1 text-sm text-[var(--color-ink-muted)] tracking-[0.16px]">
-          Upload a clear photo of your sworn Change of Name affidavit. Review the preview before
-          continuing.
+          Upload a clear photo of your sworn Change of Name affidavit. It will be verified before you
+          can continue.
         </p>
+      </div>
+
+      <div className="lg:hidden">
+        <AffidavitVerificationChecklist compact />
       </div>
 
       <input
@@ -54,7 +60,15 @@ export function AffidavitStep({
       {!documentFile && (
         <FileUploaderDropContainer
           accept={AFFIDAVIT_ACCEPTED_TYPES as unknown as string[]}
-          labelText="Drag and drop your affidavit image here, or click to upload"
+          className="publish-wizard__affidavit-upload"
+          labelText={
+            (
+              <span className="publish-wizard__affidavit-upload-label">
+                <CloudUpload size={32} aria-hidden className="publish-wizard__affidavit-upload-icon" />
+                <span>Drag and drop your affidavit image here, or click to upload</span>
+              </span>
+            ) as unknown as string
+          }
           multiple={false}
           onAddFiles={onFileAdd}
         />

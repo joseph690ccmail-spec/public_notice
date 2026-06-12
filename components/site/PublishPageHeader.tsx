@@ -26,7 +26,7 @@ export function PublishPageHeader({
         </Breadcrumb>
         
         <h1
-          className="text-2xl font-light tracking-[-0.2px] text-[var(--color-ink)] md:text-[2rem] leading-tight"
+          className="text-3xl font-light tracking-[-0.2px] text-[var(--color-ink)] md:text-[2rem] leading-tight"
           style={{ fontFamily: "var(--font-plex-sans), system-ui" }}
         >
           {title}

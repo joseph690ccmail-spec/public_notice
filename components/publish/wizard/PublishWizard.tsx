@@ -10,6 +10,7 @@ import { PublishWizardFooter } from "@/components/publish/wizard/ui/PublishWizar
 import { PublishWizardProgress } from "@/components/publish/wizard/ui/PublishWizardProgress";
 import { PublishWizardSidebar } from "@/components/publish/wizard/ui/PublishWizardSidebar";
 import { usePublishWizard } from "@/components/publish/wizard/usePublishWizard";
+import { AFFIDAVIT_VERIFYING_LABEL } from "@/lib/affidavit-verification/user-messages";
 
 export function PublishWizard() {
   const wizard = usePublishWizard();
@@ -34,7 +35,13 @@ export function PublishWizard() {
         onStartFresh={() => wizard.handleResumeChoice(true)}
       />
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+      <div
+        className={
+          wizard.step === 4
+            ? "grid gap-8"
+            : "grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+        }
+      >
         <div className="min-w-0">
           <PublishWizardProgress step={wizard.step} />
 
@@ -50,10 +57,21 @@ export function PublishWizard() {
           )}
 
           <div className="relative border border-[var(--color-hairline)] bg-[var(--color-canvas)] p-5 md:p-8">
-            {wizard.busy && (
+            {(wizard.busy || wizard.verifyingAffidavit) && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[var(--color-canvas)]/90 p-6">
-                <Loading withOverlay={false} description="Loading your application…" />
-                <p className="text-sm text-[var(--color-ink-muted)]">Please wait a moment.</p>
+                <Loading
+                  withOverlay={false}
+                  description={
+                    wizard.verifyingAffidavit
+                      ? AFFIDAVIT_VERIFYING_LABEL
+                      : "Loading your application…"
+                  }
+                />
+                <p className="max-w-sm text-center text-sm text-[var(--color-ink-muted)]">
+                  {wizard.verifyingAffidavit
+                    ? wizard.verifyingAffidavitDescription
+                    : "Please wait a moment."}
+                </p>
               </div>
             )}
 
@@ -62,7 +80,10 @@ export function PublishWizard() {
             <PublishWizardFooter
               step={wizard.step}
               busy={wizard.busy}
+              consentGiven={wizard.form.consentGiven}
               uploadingAffidavit={wizard.uploadingAffidavit}
+              verifyingAffidavit={wizard.verifyingAffidavit}
+              affidavitVerificationFailed={wizard.affidavitVerificationFailed}
               onBack={wizard.goBack}
               onNext={wizard.goNext}
               onPay={wizard.handlePay}
@@ -70,6 +91,7 @@ export function PublishWizard() {
           </div>
         </div>
 
+        {wizard.step !== 4 && (
         <div className="hidden min-w-0 lg:block">
           <PublishWizardSidebar
             step={wizard.step}
@@ -82,6 +104,7 @@ export function PublishWizard() {
             onReplaceDocument={wizard.replaceDocument}
           />
         </div>
+        )}
       </div>
     </>
   );

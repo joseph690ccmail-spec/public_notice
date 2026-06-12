@@ -2,11 +2,18 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowRight, Search } from "@carbon/icons-react";
+import { ArrowRight } from "@carbon/icons-react";
 import { Button, ClickableTile } from "@carbon/react";
 import { HomeModals } from "@/components/home/HomeModals";
+import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { UtilityBar } from "@/components/site/UtilityBar";
+import { getNoticeByPnn, PublishApiError, searchNotices } from "@/lib/api/client";
+import type { ChangeOfNameNotice } from "@/lib/notices";
+import type { PublicNoticeResponse } from "@/lib/notices/dto";
+import { publicNoticeToCertificateNotice } from "@/lib/notices/mappers";
+
+const PNN_PATTERN = /^PNN-[A-Z0-9]{6}$/i;
 
 function clearHash() {
   const { pathname, search } = window.location;
@@ -15,7 +22,18 @@ function clearHash() {
 
 export default function PublicNoticeSystem() {
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyPnn, setVerifyPnn] = useState<string | undefined>();
+  const [verifyPreloadedNotice, setVerifyPreloadedNotice] =
+    useState<ChangeOfNameNotice | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+  const [searchResultsQuery, setSearchResultsQuery] = useState("");
+  const [searchResultsItems, setSearchResultsItems] = useState<PublicNoticeResponse[]>(
+    []
+  );
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -29,12 +47,86 @@ export default function PublicNoticeSystem() {
   }, []);
 
   const closePublish = useCallback(() => setPublishOpen(false), []);
-  const closeVerify = useCallback(() => setVerifyOpen(false), []);
+  const closeVerify = useCallback(() => {
+    setVerifyOpen(false);
+    setVerifyPnn(undefined);
+    setVerifyPreloadedNotice(null);
+  }, []);
+
+  const openVerify = useCallback((pnn?: string) => {
+    setVerifyPreloadedNotice(null);
+    setVerifyPnn(pnn);
+    setVerifyOpen(true);
+  }, []);
+
+  const openVerifiedNotice = useCallback((notice: PublicNoticeResponse) => {
+    setVerifyPreloadedNotice(publicNoticeToCertificateNotice(notice));
+    setVerifyPnn(notice.pnn);
+    setVerifyOpen(true);
+  }, []);
+
+  const closeSearchResults = useCallback(() => {
+    setSearchResultsOpen(false);
+    setSearchResultsItems([]);
+    setSearchResultsQuery("");
+  }, []);
+
+  const handleSearchResultSelect = useCallback(
+    (pnn: string) => {
+      const match = searchResultsItems.find((item) => item.pnn === pnn);
+      setSearchResultsOpen(false);
+      if (match) {
+        openVerifiedNotice(match);
+      } else {
+        openVerify(pnn);
+      }
+    },
+    [openVerifiedNotice, openVerify, searchResultsItems]
+  );
+
+  const handleSearch = useCallback(async () => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setSearchError("Enter at least 2 characters to search.");
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchError(null);
+    setSearchResultsOpen(false);
+
+    try {
+      if (PNN_PATTERN.test(trimmed)) {
+        const notice = await getNoticeByPnn(trimmed);
+        openVerifiedNotice(notice);
+        return;
+      }
+
+      const result = await searchNotices(trimmed);
+      if (result.items.length === 0) {
+        setSearchError(`No notices match "${trimmed}". Try a different name or PNN.`);
+      } else if (result.items.length === 1) {
+        openVerifiedNotice(result.items[0]);
+      } else {
+        setSearchResultsItems(result.items);
+        setSearchResultsQuery(result.query);
+        setSearchResultsOpen(true);
+      }
+    } catch (error) {
+      setSearchError(
+        error instanceof PublishApiError
+          ? error.message
+          : "Could not search notices. Please try again."
+      );
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [openVerifiedNotice, searchQuery]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-canvas)] text-[var(--color-ink)] font-sans">
       <header className="w-full bg-[var(--color-primary)] text-white">
-        <UtilityBar onVerifyClick={() => setVerifyOpen(true)} />
+        <UtilityBar onVerifyClick={() => openVerify()} />
 
         <div className="mx-auto max-w-7xl px-6 py-14 md:py-20">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-8 md:gap-12">
@@ -55,10 +147,10 @@ export default function PublicNoticeSystem() {
               </div>
 
               <h1
-                className="text-4xl md:text-5xl font-light tracking-[-0.4px] leading-[1.05] mb-3"
+                className="text-5xl md:text-6xl font-regular tracking-[-0.4px] leading-[1.05] mb-3"
                 style={{ fontFamily: "var(--font-plex-sans), system-ui" }}
               >
-                PNN
+                Public Notice System
               </h1>
 
               <p className="max-w-xl text-base md:text-lg text-white/60 tracking-[0.16px]">
@@ -80,20 +172,46 @@ export default function PublicNoticeSystem() {
             </div>
 
             <div className="flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-                <input
-                  type="text"
-                  placeholder="Enter name, PNN (e.g. PNN-78BGH1), or keyword..."
-                  className="w-full flex-1 border border-[var(--color-hairline)] bg-white px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-primary)]"
-                  style={{ borderRadius: 0 }}
-                />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div className="min-w-0 flex-1">
+                  <label className="sr-only" htmlFor="home-notice-search">
+                    Search by name or PNN
+                  </label>
+                  <input
+                    id="home-notice-search"
+                    type="text"
+                    placeholder="Enter name, PNN (e.g. PNN-78BGH1), or keyword..."
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      if (searchError) setSearchError(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !searchLoading) {
+                        void handleSearch();
+                      }
+                    }}
+                    className="w-full border border-[var(--color-hairline)] bg-white px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--color-primary)]"
+                    style={{ borderRadius: 0 }}
+                    disabled={searchLoading}
+                  />
+                  {searchError && (
+                    <p
+                      className="mt-1.5 text-sm text-[var(--color-error)]"
+                      role="alert"
+                    >
+                      {searchError}
+                    </p>
+                  )}
+                </div>
                 <Button
                   kind="primary"
-                  renderIcon={Search}
                   size="md"
-                  className="flex-shrink-0 self-end sm:self-auto"
+                  className="home-search__btn flex-shrink-0 self-end sm:mt-0 sm:self-start"
+                  disabled={searchLoading || searchQuery.trim().length < 2}
+                  onClick={() => void handleSearch()}
                 >
-                  Search
+                  <ButtonLabel loading={searchLoading}>Search</ButtonLabel>
                 </Button>
               </div>
             </div>
@@ -103,9 +221,6 @@ export default function PublicNoticeSystem() {
 
       <section id="quick-actions" className="mx-auto w-full max-w-7xl px-6 py-12 md:py-16">
         <div className="mb-8">
-          <div className="text-xs tracking-[0.16px] text-[var(--color-ink-muted)] mb-1">
-            QUICK ACTIONS
-          </div>
           <h2
             className="text-3xl font-light tracking-[-0.3px]"
             style={{ fontFamily: "var(--font-plex-sans), system-ui" }}
@@ -146,7 +261,7 @@ export default function PublicNoticeSystem() {
               title="Verify a Notice"
               onClick={(event) => {
                 event.preventDefault();
-                setVerifyOpen(true);
+                openVerify();
               }}
             >
             <h3 className="text-xl font-medium tracking-tight mb-2 transition-colors">
@@ -178,8 +293,15 @@ export default function PublicNoticeSystem() {
 
       <HomeModals
         verifyOpen={verifyOpen}
+        verifyPnn={verifyPnn}
+        verifyPreloadedNotice={verifyPreloadedNotice}
+        searchResultsOpen={searchResultsOpen}
+        searchResultsQuery={searchResultsQuery}
+        searchResultsItems={searchResultsItems}
         publishOpen={publishOpen}
         onVerifyClose={closeVerify}
+        onSearchResultsClose={closeSearchResults}
+        onSearchResultSelect={handleSearchResultSelect}
         onPublishClose={closePublish}
       />
     </div>

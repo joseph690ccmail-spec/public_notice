@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Document, TrashCan, View } from "@carbon/icons-react";
+import { Document, Renew, TrashCan, View } from "@carbon/icons-react";
 import { Button, Loading } from "@carbon/react";
 import { formatFileSize } from "@/lib/publish";
 
@@ -72,12 +72,20 @@ export function AffidavitPreview({
           Review the image above before continuing. Text must be legible.
         </p>
         <div className="flex gap-2">
-          <Button kind="ghost" size="sm" onClick={onReplace} disabled={uploading}>
+          <Button
+            kind="secondary"
+            size="sm"
+            className="affidavit-preview__action-btn"
+            renderIcon={Renew}
+            onClick={onReplace}
+            disabled={uploading}
+          >
             Replace
           </Button>
           <Button
-            kind="danger--ghost"
+            kind="secondary"
             size="sm"
+            className="affidavit-preview__action-btn affidavit-preview__action-btn--remove"
             renderIcon={TrashCan}
             onClick={onRemove}
             disabled={uploading}

@@ -96,13 +96,3 @@ export function buildNoticeText(notice: ChangeOfNameNotice): string {
   return `I, formerly known as ${notice.formerName} now wish to be called and addressed as ${notice.newName}. All former documents remain valid. General public should please take note.`;
 }
 
-/** MVP stub — returns sample notice data for any verification request. */
-export function getSampleVerifiedNotice(pnn?: string): ChangeOfNameNotice {
-  const sample = recentNotices[0];
-  const trimmed = pnn?.trim();
-
-  return {
-    ...sample,
-    pnn: trimmed || sample.pnn,
-  };
-}

@@ -4,10 +4,14 @@ import React, { useState } from "react";
 import { Close, Menu } from "@carbon/icons-react";
 import { IconButton } from "@carbon/react";
 
-const utilityLinks = [
-  { href: "/#search", label: "Search Registry" },
-  { href: "/#verify", label: "Verify Notice", action: "verify" as const },
-  { href: "/login", label: "Sign In" },
+const utilityLinks: Array<{
+  href: string;
+  label: string;
+  action?: "verify";
+}> = [
+  // { href: "/#search", label: "Search Registry" },
+  // { href: "/#verify", label: "Verify Notice", action: "verify" },
+  // { href: "/login", label: "Sign In" },
 ];
 
 interface UtilityBarProps {

@@ -72,11 +72,25 @@ export async function searchNoticesByName(query: string): Promise<NoticeSearchRe
     throw new ApiError("BAD_REQUEST", "Search query must be at least 2 characters.");
   }
 
+  const normalizedPnn = trimmed.toUpperCase();
+  const exactPnn = pnnParamSchema.safeParse(normalizedPnn);
+  if (exactPnn.success) {
+    const notice = await prisma.notice.findUnique({
+      where: { pnn: exactPnn.data },
+    });
+
+    return {
+      query: trimmed,
+      items: notice ? [toPublicNotice(notice)] : [],
+    };
+  }
+
   const notices = await prisma.notice.findMany({
     where: {
       OR: [
         { formerName: { contains: trimmed, mode: "insensitive" } },
         { newName: { contains: trimmed, mode: "insensitive" } },
+        { pnn: { contains: normalizedPnn, mode: "insensitive" } },
       ],
     },
     orderBy: { publishedAt: "desc" },

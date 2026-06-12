@@ -47,6 +47,10 @@ function noticeFromDraft(draft: Draft, pnn: string) {
     affidavitMimeType: draft.affidavitMimeType,
     affidavitSizeBytes: draft.affidavitSizeBytes,
     affidavitUploadedAt: draft.affidavitUploadedAt,
+    affidavitConfidence: draft.affidavitConfidence,
+    affidavitVerdict: draft.affidavitVerdict,
+    affidavitIssues: draft.affidavitIssues,
+    affidavitVerifiedAt: draft.affidavitVerifiedAt,
     draftId: draft.id,
     verified: true,
   };

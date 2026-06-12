@@ -143,6 +143,7 @@ export function resolveRateLimitTier(pathname: string): RateLimitTier {
     return "noticesList";
   }
   if (pathname.startsWith("/api/v1/drafts")) return "drafts";
+  if (pathname.startsWith("/api/v1/affidavit/verify")) return "affidavitVerify";
   if (pathname.startsWith("/api/v1/payments")) return "payments";
   if (pathname.startsWith("/api/v1/webhooks")) return "webhook";
   return "global";

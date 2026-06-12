@@ -33,6 +33,11 @@ export const API_ROUTE_SECURITY = {
     rateLimit: "drafts",
     bodySchema: draftAbandonBodySchema,
   },
+  "GET /api/v1/drafts/:draftId": {
+    methods: ["GET"],
+    rateLimit: "drafts",
+    requiresDraftBinding: true,
+  },
   "PATCH /api/v1/drafts/:draftId": {
     methods: ["PATCH"],
     rateLimit: "drafts",
@@ -44,6 +49,11 @@ export const API_ROUTE_SECURITY = {
     rateLimit: "drafts",
     requiresDraftBinding: true,
     acceptsMultipart: true,
+  },
+  "POST /api/v1/drafts/:draftId/affidavit/verify": {
+    methods: ["POST"],
+    rateLimit: "affidavitVerify",
+    requiresDraftBinding: true,
   },
   "POST /api/v1/drafts/:draftId/save-link": {
     methods: ["POST"],
@@ -85,6 +95,11 @@ export const API_ROUTE_SECURITY = {
     rateLimit: "search",
     bodySchema: noticeSearchBodySchema,
     maskPublicResponse: true,
+  },
+  "POST /api/v1/affidavit/verify": {
+    methods: ["POST"],
+    rateLimit: "affidavitVerify",
+    acceptsMultipart: true,
   },
 } as const satisfies Record<string, RouteSecurityProfile>;
 

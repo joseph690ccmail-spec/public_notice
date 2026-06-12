@@ -1,4 +1,6 @@
 import type { Draft } from "@prisma/client";
+import type { AffidavitVerificationResult } from "@/lib/affidavit-verification/types";
+import { formatStoredVerification } from "@/lib/affidavit-verification/db";
 import { formatNoticeReason } from "@/lib/drafts/reason";
 
 export interface DraftResponse {
@@ -11,6 +13,7 @@ export interface DraftResponse {
   reasonOther: string | null;
   consentGiven: boolean;
   hasAffidavit: boolean;
+  affidavitVerification: AffidavitVerificationResult | null;
   status: Draft["status"];
   resumed?: boolean;
   createdAt: string;
@@ -31,6 +34,7 @@ export function toDraftResponse(
     reasonOther: draft.reasonOther,
     consentGiven: draft.consentGiven,
     hasAffidavit: Boolean(draft.affidavitObjectKey),
+    affidavitVerification: formatStoredVerification(draft),
     status: draft.status,
     ...(options?.resumed ? { resumed: true } : {}),
     createdAt: draft.createdAt.toISOString(),

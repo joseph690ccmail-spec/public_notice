@@ -5,8 +5,19 @@ import { API_ROUTE_SECURITY } from "@/lib/security/route-config";
 
 export const runtime = "nodejs";
 
+const getProfile = API_ROUTE_SECURITY["GET /api/v1/drafts/:draftId"];
 const patchProfile = API_ROUTE_SECURITY["PATCH /api/v1/drafts/:draftId"];
 const deleteProfile = API_ROUTE_SECURITY["DELETE /api/v1/drafts/:draftId"];
+
+export const GET = createDraftBoundHandler(
+  {
+    methods: getProfile.methods,
+    rateLimit: getProfile.rateLimit,
+  },
+  async ({ draft }) => {
+    return Response.json({ data: toDraftResponse(draft) });
+  }
+);
 
 export const PATCH = createDraftBoundHandler(
   {

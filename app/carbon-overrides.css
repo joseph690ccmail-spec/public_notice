@@ -184,6 +184,56 @@
   max-inline-size: 26rem;
 }
 
+/* Publish wizard — footer nav (Back left, Continue/Pay right; one row on mobile) */
+.publish-wizard__footer {
+  container-type: inline-size;
+}
+
+/* Publish wizard — affidavit upload drop zone */
+.publish-wizard__affidavit-upload.cds--file__drop-container {
+  align-items: center;
+  justify-content: center;
+  block-size: auto;
+  min-block-size: 8.5rem;
+  inline-size: 100%;
+  text-align: center;
+}
+
+.publish-wizard__affidavit-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--cds-text-secondary, #525252);
+}
+
+.publish-wizard__affidavit-upload-icon {
+  color: var(--cds-icon-primary, #161616);
+}
+
+/* Affidavit preview — replace / remove actions */
+.affidavit-preview__action-btn.cds--btn--secondary {
+  background-color: #fcf4d6;
+  color: #8e6a00;
+}
+
+.affidavit-preview__action-btn.cds--btn--secondary:hover,
+.affidavit-preview__action-btn.cds--btn--secondary:focus {
+  background-color: #f8e6a0;
+  color: #684e00;
+}
+
+.affidavit-preview__action-btn--remove.cds--btn--secondary {
+  background-color: #fff1f1;
+  color: #da1e28;
+}
+
+.affidavit-preview__action-btn--remove.cds--btn--secondary:hover,
+.affidavit-preview__action-btn--remove.cds--btn--secondary:focus {
+  background-color: #ffd7d9;
+  color: #a2191f;
+}
+
 /* Publish wizard — back button */
 .publish-wizard__back-btn.cds--btn--secondary {
   background-color: #393939;
@@ -201,8 +251,28 @@
   color: #8d8d8d;
 }
 
-.publish-wizard__btn-spinner.cds--loading--small circle {
+.publish-wizard__btn-spinner.cds--loading--small circle,
+.home-search__btn .publish-wizard__btn-spinner.cds--loading--small circle {
   stroke-width: 10;
+}
+
+.home-search__btn .publish-wizard__btn-spinner.cds--loading--small circle {
+  stroke: #ffffff;
+}
+
+.home-search__btn.cds--btn--primary:disabled,
+.home-search__btn.cds--btn--primary.cds--btn--disabled {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.home-search__btn.cds--btn--primary:disabled:hover,
+.home-search__btn.cds--btn--primary.cds--btn--disabled:hover {
+  background-color: var(--color-primary);
+  color: #ffffff;
 }
 
 /* Mobile: center Carbon modals (default pins container to top of viewport) */

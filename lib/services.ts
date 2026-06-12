@@ -39,20 +39,6 @@ export const PUBLISH_SERVICES: PublishService[] = [
     available: false,
     keywords: ["company", "ngo", "cac", "corporate", "business"],
   },
-  {
-    id: "marriage-banns",
-    name: "Marriage Banns",
-    description: "Statutory marriage notice publications.",
-    available: false,
-    keywords: ["marriage", "banns", "wedding", "statutory"],
-  },
-  {
-    id: "land-notice",
-    name: "Land & Property Notice",
-    description: "Property, land, and estate-related public notices.",
-    available: false,
-    keywords: ["land", "property", "estate", "real estate"],
-  },
 ];
 
 export function filterPublishServices(query: string): PublishService[] {

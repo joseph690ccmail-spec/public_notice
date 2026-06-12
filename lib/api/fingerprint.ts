@@ -13,6 +13,7 @@ export function getOrCreateDraftFingerprint(): string {
 export interface StoredDraftSession {
   draftId: string;
   email: string;
+  step?: number;
 }
 
 export function saveDraftSession(session: StoredDraftSession): void {

@@ -6,35 +6,47 @@ import { CheckmarkFilled, Printer } from "@carbon/icons-react";
 import {
   Button,
   ComposedModal,
+  Loading,
   ModalBody,
   ModalFooter,
   ModalHeader,
   Tag,
   TextInput,
 } from "@carbon/react";
-import {
-  formatNoticeDate,
-  getSampleVerifiedNotice,
-  type ChangeOfNameNotice,
-} from "@/lib/notices";
+import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
+import { FieldError } from "@/components/publish/wizard/ui/FieldError";
+import { getNoticeByPnn, PublishApiError } from "@/lib/api/client";
+import { formatNoticeDate, type ChangeOfNameNotice } from "@/lib/notices";
+import { publicNoticeToCertificateNotice } from "@/lib/notices/mappers";
 import { useCertificatePrint } from "@/lib/useCertificatePrint";
 import { NoticeCertificate } from "./NoticeCertificate";
 
 interface VerifyNoticeModalProps {
   open?: boolean;
+  initialPnn?: string;
+  preloadedNotice?: ChangeOfNameNotice | null;
   onClose: () => void;
 }
 
-export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalProps) {
+export function VerifyNoticeModal({
+  open = true,
+  initialPnn,
+  preloadedNotice,
+  onClose,
+}: VerifyNoticeModalProps) {
   const [pnn, setPnn] = useState("");
   const [verifiedNotice, setVerifiedNotice] = useState<ChangeOfNameNotice | null>(
     null
   );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const handlePrint = useCertificatePrint();
 
   const reset = useCallback(() => {
     setPnn("");
     setVerifiedNotice(null);
+    setLoading(false);
+    setError(null);
   }, []);
 
   useEffect(() => {
@@ -43,14 +55,53 @@ export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalPro
     }
   }, [open, reset]);
 
+  const verifyByPnn = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setError("Enter a Public Notice Number (PNN) to verify.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const notice = await getNoticeByPnn(trimmed);
+      setVerifiedNotice(publicNoticeToCertificateNotice(notice));
+    } catch (err) {
+      setVerifiedNotice(null);
+      setError(
+        err instanceof PublishApiError
+          ? err.message
+          : "Could not verify this notice. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (preloadedNotice) {
+      setPnn(preloadedNotice.pnn);
+      setVerifiedNotice(preloadedNotice);
+      return;
+    }
+
+    if (!initialPnn?.trim()) return;
+    setPnn(initialPnn.trim());
+    void verifyByPnn(initialPnn);
+  }, [open, initialPnn, preloadedNotice, verifyByPnn]);
+
   const handleClose = useCallback(() => {
     reset();
     onClose();
   }, [onClose, reset]);
 
   const handleVerify = useCallback(() => {
-    setVerifiedNotice(getSampleVerifiedNotice(pnn));
-  }, [pnn]);
+    void verifyByPnn(pnn);
+  }, [pnn, verifyByPnn]);
 
   if (!open) return null;
 
@@ -73,11 +124,21 @@ export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalPro
         >
           {!verifiedNotice && (
             <>
+              {loading && initialPnn ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <Loading withOverlay={false} description="Verifying notice…" />
+                  <p className="text-sm text-[var(--color-ink-muted)]">
+                    Looking up {initialPnn.trim()} in the national registry.
+                  </p>
+                </div>
+              ) : (
+                <>
               <p className="mb-6 text-sm leading-relaxed text-[var(--color-ink-muted)]">
                 Enter the Public Notice Number (PNN) shown on the certificate, then
                 click Verify to confirm the notice is registered and view the official
                 publication record.
               </p>
+
               <TextInput
                 id="verify-pnn-input"
                 size="lg"
@@ -88,13 +149,21 @@ export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalPro
                 }
                 placeholder="e.g. PNN-78BGH1"
                 value={pnn}
-                onChange={(e) => setPnn(e.target.value)}
+                onChange={(e) => {
+                  setPnn(e.target.value);
+                  if (error) setError(null);
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !loading) {
                     handleVerify();
                   }
                 }}
+                disabled={loading}
+                invalid={Boolean(error)}
               />
+              <FieldError message={error ?? undefined} />
+                </>
+              )}
             </>
           )}
 
@@ -122,7 +191,7 @@ export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalPro
           )}
         </ModalBody>
         <ModalFooter className="bg-[var(--color-canvas)]">
-          <Button kind="secondary" onClick={handleClose}>
+          <Button kind="secondary" onClick={handleClose} disabled={loading}>
             Close
           </Button>
           {verifiedNotice ? (
@@ -130,8 +199,13 @@ export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalPro
               Print certificate
             </Button>
           ) : (
-            <Button kind="primary" onClick={handleVerify}>
-              Verify
+            <Button
+              kind="primary"
+              onClick={handleVerify}
+              disabled={loading || !pnn.trim()}
+              className="home-search__btn"
+            >
+              <ButtonLabel loading={loading}>Verify</ButtonLabel>
             </Button>
           )}
         </ModalFooter>

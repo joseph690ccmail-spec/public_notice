@@ -16,7 +16,7 @@ export function NoticesPageHeader() {
           className="text-2xl font-light tracking-[-0.2px] text-[var(--color-ink)] md:text-[2rem] leading-tight"
           style={{ fontFamily: "var(--font-plex-sans), system-ui" }}
         >
-          Change of Name Notices
+          All Public Notices
         </h1>
         <p className="mt-3 max-w-2xl text-sm tracking-[0.16px] text-[var(--color-ink-muted)] md:text-base">
           Official digital publications from the national registry. Search by name or

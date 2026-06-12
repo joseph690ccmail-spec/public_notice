@@ -1,6 +1,7 @@
 import React from "react";
 import { AffidavitPreview } from "@/components/publish/AffidavitPreview";
 import { ApplicationSummary } from "@/components/publish/wizard/ui/ApplicationSummary";
+import { AffidavitVerificationChecklist } from "@/components/publish/wizard/ui/AffidavitVerificationChecklist";
 import { WhatYouWillNeed } from "@/components/publish/wizard/ui/WhatYouWillNeed";
 import type { PublishFormData } from "@/lib/publish";
 
@@ -25,6 +26,10 @@ export function PublishWizardSidebar({
   onRemoveDocument,
   onReplaceDocument,
 }: PublishWizardSidebarProps) {
+  if (step === 4) {
+    return null;
+  }
+
   if (step === 2 && documentFile && previewUrl) {
     return (
       <AffidavitPreview
@@ -36,6 +41,10 @@ export function PublishWizardSidebar({
         onReplace={onReplaceDocument}
       />
     );
+  }
+
+  if (step === 2) {
+    return <AffidavitVerificationChecklist />;
   }
 
   if (step === 3) {

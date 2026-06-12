@@ -1,3 +1,4 @@
+import type { AffidavitVerificationResult } from "@/lib/affidavit-verification";
 import type { DraftResponse } from "@/lib/drafts/dto";
 import type { PublicNoticeResponse } from "@/lib/notices/dto";
 import type { PaymentInitializeResult, PaymentVerifyResult } from "@/lib/payments/service";
@@ -87,6 +88,12 @@ export interface PatchDraftPayload {
   consentGiven?: boolean;
 }
 
+export async function getDraft(draftId: string): Promise<DraftResponse> {
+  return apiFetch<DraftResponse>(`/api/v1/drafts/${draftId}`, {
+    method: "GET",
+  });
+}
+
 export async function patchDraft(
   draftId: string,
   payload: PatchDraftPayload
@@ -101,6 +108,33 @@ export async function uploadAffidavit(draftId: string, file: File): Promise<Draf
   const formData = new FormData();
   formData.append("file", file);
   return apiFetch<DraftResponse>(`/api/v1/drafts/${draftId}/affidavit`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export async function verifyAffidavitDraft(
+  draftId: string,
+  file?: File
+): Promise<DraftResponse> {
+  if (file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiFetch<DraftResponse>(`/api/v1/drafts/${draftId}/affidavit/verify`, {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  return apiFetch<DraftResponse>(`/api/v1/drafts/${draftId}/affidavit/verify`, {
+    method: "POST",
+  });
+}
+
+export async function verifyAffidavit(file: File): Promise<AffidavitVerificationResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<AffidavitVerificationResult>("/api/v1/affidavit/verify", {
     method: "POST",
     body: formData,
   });

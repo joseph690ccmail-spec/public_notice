@@ -34,6 +34,9 @@ const envSchema = z.object({
 
   /** Optional Redis URL for distributed rate limiting / idempotency. */
   REDIS_URL: z.string().optional(),
+
+  /** Groq API key for AI affidavit verification (server-side only). */
+  GROQ_AI_KEY: z.string().optional(),
 });
 
 export type SecurityEnv = z.infer<typeof envSchema>;

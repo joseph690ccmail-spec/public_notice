@@ -38,6 +38,12 @@ enum TransactionStatus {
   FAILED
 }
 
+enum AffidavitVerdict {
+  GENUINE
+  UNCERTAIN
+  REJECTED
+}
+
 /// Guest application — draftId is the session token. Email captured first (step 2).
 model Draft {
   id              String        @id @default(uuid()) @db.Uuid
@@ -53,6 +59,10 @@ model Draft {
   affidavitMimeType   String?
   affidavitSizeBytes  Int?
   affidavitUploadedAt DateTime?
+  affidavitConfidence Float?
+  affidavitVerdict    AffidavitVerdict?
+  affidavitIssues     String[]            @default([])
+  affidavitVerifiedAt DateTime?
   ipHash          String?
   fingerprintHash String?
   status          DraftStatus   @default(IN_PROGRESS)
@@ -103,6 +113,10 @@ model Notice {
   affidavitMimeType   String?
   affidavitSizeBytes  Int?
   affidavitUploadedAt DateTime?
+  affidavitConfidence Float?
+  affidavitVerdict    AffidavitVerdict?
+  affidavitIssues     String[]            @default([])
+  affidavitVerifiedAt DateTime?
   publishedAt         DateTime     @default(now())
   verified            Boolean      @default(true)
   draftId             String?      @unique @db.Uuid

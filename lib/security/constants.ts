@@ -9,6 +9,7 @@ export const RATE_LIMIT_ROUTES = {
   drafts: `${API_V1_PREFIX}/drafts`,
   payments: `${API_V1_PREFIX}/payments`,
   webhooks: `${API_V1_PREFIX}/webhooks`,
+  affidavitVerify: `${API_V1_PREFIX}/affidavit/verify`,
 } as const;
 
 export type RateLimitTier =
@@ -18,7 +19,8 @@ export type RateLimitTier =
   | "noticesList"
   | "drafts"
   | "payments"
-  | "webhook";
+  | "webhook"
+  | "affidavitVerify";
 
 export interface RateLimitConfig {
   limit: number;
@@ -34,6 +36,7 @@ export const RATE_LIMITS: Record<RateLimitTier, RateLimitConfig> = {
   drafts: { limit: 60, windowMs: 60_000 },
   payments: { limit: 20, windowMs: 60_000 },
   webhook: { limit: 200, windowMs: 60_000 },
+  affidavitVerify: { limit: 10, windowMs: 60_000 },
 };
 
 export const UUID_V4_REGEX =

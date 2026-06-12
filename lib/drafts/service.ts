@@ -1,6 +1,11 @@
 import type { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { ApiError } from "@/lib/api/errors";
+import { verifyAffidavitImage } from "@/lib/affidavit-verification";
+import { AFFIDAVIT_MIN_CONFIDENCE } from "@/lib/affidavit-verification/constants";
+import { verificationToDraftData } from "@/lib/affidavit-verification/db";
+import { AFFIDAVIT_LOW_CONFIDENCE_MESSAGE } from "@/lib/affidavit-verification/user-messages";
+import type { AffidavitVerificationResult } from "@/lib/affidavit-verification/types";
 import { bindingFromRequest, requireDraftAccess } from "@/lib/drafts/access";
 import { parseNoticeReason } from "@/lib/drafts/reason";
 import { sendDraftResumeLink } from "@/lib/email/resume-link";
@@ -9,6 +14,7 @@ import { getSecurityEnv } from "@/lib/security/env";
 import type { AllowedAffidavitMime } from "@/lib/security/upload/constants";
 import {
   buildAffidavitObjectKey,
+  downloadPrivateAffidavit,
   extensionForMime,
   getPrivateBucketName,
   uploadPrivateAffidavit,
@@ -30,6 +36,56 @@ function isR2Configured(): boolean {
       env.R2_SECRET_ACCESS_KEY &&
       env.R2_BUCKET_NAME
   );
+}
+
+function assertVerificationAllowsProgress(verification: AffidavitVerificationResult): void {
+  if (verification.confidence >= AFFIDAVIT_MIN_CONFIDENCE) return;
+
+  throw new ApiError("BAD_REQUEST", AFFIDAVIT_LOW_CONFIDENCE_MESSAGE);
+}
+
+async function saveVerificationAttempt(
+  draftId: string,
+  verification: AffidavitVerificationResult
+) {
+  return prisma.draft.update({
+    where: { id: draftId },
+    data: verificationToDraftData(verification),
+  });
+}
+
+async function uploadVerifiedAffidavitToR2(
+  draftId: string,
+  buffer: Buffer,
+  mimeType: AllowedAffidavitMime,
+  sizeBytes: number,
+  verification: AffidavitVerificationResult
+) {
+  const objectKey = buildAffidavitObjectKey(draftId, extensionForMime(mimeType));
+
+  if (isR2Configured()) {
+    await uploadPrivateAffidavit(
+      {
+        bucket: getPrivateBucketName(),
+        key: objectKey,
+        mimeType,
+      },
+      buffer
+    );
+  } else if (getSecurityEnv().NODE_ENV === "production") {
+    throw new ApiError("INTERNAL_ERROR", "Affidavit storage is not configured.");
+  }
+
+  return prisma.draft.update({
+    where: { id: draftId },
+    data: {
+      affidavitObjectKey: objectKey,
+      affidavitMimeType: mimeType,
+      affidavitSizeBytes: sizeBytes,
+      affidavitUploadedAt: new Date(),
+      ...verificationToDraftData(verification),
+    },
+  });
 }
 
 export async function initDraft(
@@ -105,39 +161,64 @@ export async function deleteDraft(draftId: string, request: NextRequest) {
   await prisma.draft.delete({ where: { id: draftId } });
 }
 
-export async function saveAffidavitForDraft(
+/**
+ * Verifies an affidavit image with AI, then uploads to R2 only when confidence is high enough.
+ */
+export async function verifyAndStoreAffidavitForDraft(
   draftId: string,
   buffer: Buffer,
   mimeType: AllowedAffidavitMime,
-  sizeBytes: number
+  sizeBytes: number,
+  request: NextRequest
 ) {
-  const objectKey = buildAffidavitObjectKey(draftId, extensionForMime(mimeType));
+  await requireDraftAccess(draftId, request);
 
-  if (isR2Configured()) {
-    await uploadPrivateAffidavit(
-      {
-        bucket: getPrivateBucketName(),
-        key: objectKey,
-        mimeType,
-      },
-      buffer
-    );
-  } else if (getSecurityEnv().NODE_ENV === "production") {
+  const verification = await verifyAffidavitImage(buffer, mimeType);
+  await saveVerificationAttempt(draftId, verification);
+  assertVerificationAllowsProgress(verification);
+
+  const draft = await uploadVerifiedAffidavitToR2(
+    draftId,
+    buffer,
+    mimeType,
+    sizeBytes,
+    verification
+  );
+
+  return { draft, verification };
+}
+
+export async function verifyStoredAffidavitForDraft(draftId: string, request: NextRequest) {
+  const { draft } = await requireDraftAccess(draftId, request);
+
+  if (!draft.affidavitObjectKey || !draft.affidavitMimeType) {
     throw new ApiError(
-      "INTERNAL_ERROR",
-      "Affidavit storage is not configured."
+      "BAD_REQUEST",
+      "Upload a clear photo of your court affidavit before continuing."
     );
   }
 
-  return prisma.draft.update({
-    where: { id: draftId },
-    data: {
-      affidavitObjectKey: objectKey,
-      affidavitMimeType: mimeType,
-      affidavitSizeBytes: sizeBytes,
-      affidavitUploadedAt: new Date(),
-    },
-  });
+  if (!isR2Configured()) {
+    throw new ApiError(
+      "BAD_REQUEST",
+      "Upload your affidavit image again so we can verify it."
+    );
+  }
+
+  const buffer = await downloadPrivateAffidavit(
+    getPrivateBucketName(),
+    draft.affidavitObjectKey
+  );
+
+  const verification = await verifyAffidavitImage(
+    buffer,
+    draft.affidavitMimeType as AllowedAffidavitMime
+  );
+
+  const updated = await saveVerificationAttempt(draftId, verification);
+  assertVerificationAllowsProgress(verification);
+
+  return { draft: updated, verification };
 }
 
 export async function sendSaveForLaterLink(draftId: string, request: NextRequest) {

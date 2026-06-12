@@ -1,14 +1,17 @@
 import { toDraftResponse } from "@/lib/drafts/dto";
 import { getDraftBinding } from "@/lib/drafts/access";
-import { verifyAndStoreAffidavitForDraft } from "@/lib/drafts/service";
-import { createAffidavitUploadHandler } from "@/lib/api/upload-handler";
+import {
+  verifyAndStoreAffidavitForDraft,
+  verifyStoredAffidavitForDraft,
+} from "@/lib/drafts/service";
+import { createAffidavitVerifyHandler } from "@/lib/api/upload-handler";
 import { API_ROUTE_SECURITY } from "@/lib/security/route-config";
 
 export const runtime = "nodejs";
 
-const profile = API_ROUTE_SECURITY["POST /api/v1/drafts/:draftId/affidavit"];
+const profile = API_ROUTE_SECURITY["POST /api/v1/drafts/:draftId/affidavit/verify"];
 
-export const POST = createAffidavitUploadHandler(
+export const POST = createAffidavitVerifyHandler(
   { rateLimit: profile.rateLimit, getDraftBinding },
   async ({ draftId, sanitized, upload, request }) => {
     const { draft } = await verifyAndStoreAffidavitForDraft(
@@ -18,6 +21,10 @@ export const POST = createAffidavitUploadHandler(
       upload.sizeBytes,
       request
     );
+    return Response.json({ data: toDraftResponse(draft) });
+  },
+  async ({ draftId, request }) => {
+    const { draft } = await verifyStoredAffidavitForDraft(draftId, request);
     return Response.json({ data: toDraftResponse(draft) });
   }
 );

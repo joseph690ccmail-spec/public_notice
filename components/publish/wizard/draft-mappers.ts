@@ -14,9 +14,23 @@ export function draftToForm(draft: DraftResponse): PublishFormData {
   };
 }
 
-export function inferStepFromDraft(draft: DraftResponse): number {
+export function inferStepFromDraft(
+  draft: DraftResponse,
+  options?: { paymentReturn?: boolean; storedStep?: number }
+): number {
+  if (options?.paymentReturn) return 4;
+
+  if (
+    typeof options?.storedStep === "number" &&
+    options.storedStep >= 0 &&
+    options.storedStep <= 4
+  ) {
+    return options.storedStep;
+  }
+
   if (!draft.formerName || !draft.newName || !draft.reason || !draft.phone) return 1;
   if (!draft.hasAffidavit) return 2;
+  if (draft.consentGiven) return 4;
   return 3;
 }
 
