@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
+import { helmetHeadersForNextConfig } from "./lib/security/helmet-headers";
+
+const pageSecurityHeaders = helmetHeadersForNextConfig("page");
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: pageSecurityHeaders,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

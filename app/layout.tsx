@@ -24,7 +24,7 @@ const plexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: "Public Notice System | Federal Republic of Nigeria",
-  description: "Official digital platform for publishing and verifying public notices in Nigeria. Fast, affordable, and verifiable Change of Name and other public notices.",
+  description: "Official digital platform for publishing and verifying public notices in Nigeria. Fast, and verifiable Change of Name and other public notices.",
   icons: {
     icon: "/favicon.ico",
   },

@@ -12,7 +12,7 @@ export function NoticeCertificate({
   notice,
   id = "notice-certificate-print",
 }: NoticeCertificateProps) {
-  const verifyUrl = `https://pns.ng/verify/${notice.pnn}`;
+  const verifyUrl = `https://pnn.ng/verify/${notice.pnn}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verifyUrl)}`;
   const isPrintSource = id === "notice-certificate-print";
 
@@ -53,7 +53,7 @@ export function NoticeCertificate({
               Federal Ministry of Information and National Orientation
             </p>
             <p className="mt-0.5 text-sm text-ink-muted">
-              Public Notice System — National Registry
+              PNN — National Registry
             </p>
           </div>
         </div>
@@ -102,8 +102,8 @@ export function NoticeCertificate({
         className={`${contentLayer} mt-5 border-t border-hairline-strong pt-3 text-center`}
       >
         <p className="m-0 text-[0.8rem] leading-snug text-ink-subtle print:text-ink-subtle">
-          This is an official digital public notice issued under the Public Notice
-          System. It does not replace statutory procedures where applicable.
+          This is an official digital public notice issued under PNN. It does not
+          replace statutory procedures where applicable.
         </p>
       </footer>
     </article>

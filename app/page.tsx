@@ -1,15 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { ArrowRight, Search } from "@carbon/icons-react";
 import { Button, ClickableTile } from "@carbon/react";
-import { VerifyNoticeModal } from "@/components/notices/VerifyNoticeModal";
+import { HomeModals } from "@/components/home/HomeModals";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { UtilityBar } from "@/components/site/UtilityBar";
 
+function clearHash() {
+  const { pathname, search } = window.location;
+  window.history.replaceState(null, "", `${pathname}${search}`);
+}
+
 export default function PublicNoticeSystem() {
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === "#publish") {
+      setPublishOpen(true);
+      clearHash();
+    } else if (hash === "#verify") {
+      setVerifyOpen(true);
+      clearHash();
+    }
+  }, []);
+
+  const closePublish = useCallback(() => setPublishOpen(false), []);
+  const closeVerify = useCallback(() => setVerifyOpen(false), []);
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-canvas)] text-[var(--color-ink)] font-sans">
@@ -38,7 +58,7 @@ export default function PublicNoticeSystem() {
                 className="text-4xl md:text-5xl font-light tracking-[-0.4px] leading-[1.05] mb-3"
                 style={{ fontFamily: "var(--font-plex-sans), system-ui" }}
               >
-                Public Notice System
+                PNN
               </h1>
 
               <p className="max-w-xl text-base md:text-lg text-white/60 tracking-[0.16px]">
@@ -55,7 +75,7 @@ export default function PublicNoticeSystem() {
             <div className="md:w-2/5">
               <div className="font-medium tracking-tight">Search Public Notices</div>
               <div className="text-sm text-[var(--color-ink-muted)] mt-0.5">
-                Find published notices by name, PNN or keyword. No login required.
+                Find published notices by name, PNN or keyword.
               </div>
             </div>
 
@@ -93,24 +113,30 @@ export default function PublicNoticeSystem() {
             What would you like to do?
           </h2>
           <p className="mt-2 max-w-md text-[var(--color-ink-muted)]">
-            Access the core services of the Public Notice System.
+            Access the core services of PNN.
           </p>
         </div>
 
         <div className="quick-actions-grid grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <ClickableTile
-            href="/publish"
-            id="clickable-tile-publish"
+          <div id="publish">
+            <ClickableTile
+              href="#publish"
+              id="clickable-tile-publish"
             renderIcon={ArrowRight}
             title="Publish a Notice"
+            onClick={(event) => {
+              event.preventDefault();
+              setPublishOpen(true);
+            }}
           >
             <h3 className="text-xl font-medium tracking-tight mb-2 transition-colors">
               Publish a Notice
             </h3>
             <p className="text-sm text-[var(--color-ink-muted)] leading-relaxed">
-              Submit a Change of Name notice and receive your official PNN and certificate.
+              Submit a public notice and receive your official PNN and certificate.
             </p>
-          </ClickableTile>
+            </ClickableTile>
+          </div>
 
           <div id="verify">
             <ClickableTile
@@ -150,7 +176,12 @@ export default function PublicNoticeSystem() {
 
       <SiteFooter />
 
-      <VerifyNoticeModal open={verifyOpen} onClose={() => setVerifyOpen(false)} />
+      <HomeModals
+        verifyOpen={verifyOpen}
+        publishOpen={publishOpen}
+        onVerifyClose={closeVerify}
+        onPublishClose={closePublish}
+      />
     </div>
   );
 }

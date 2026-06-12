@@ -4,7 +4,7 @@ import { UtilityBar } from "./UtilityBar";
 
 export function NoticesPageHeader() {
   return (
-    <header className="notices-page-header w-full border-b border-[var(--color-hairline)] bg-[#e8f5ef]">
+    <header className="notices-page-header w-full border-b border-[var(--color-hairline)] bg-[var(--color-page-header-surface)]">
       <UtilityBar />
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
         <Breadcrumb className="notices-page-header__breadcrumb mb-4" noTrailingSlash>

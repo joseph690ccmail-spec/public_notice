@@ -38,7 +38,7 @@ export function NoticeCertificateModal({
       >
         <ModalHeader
           title="Certificate preview"
-          label="Public Notice System"
+          label="PNN"
           closeModal={onClose}
         />
         <ModalBody hasScrollingContent className="bg-surface-2 p-4">

@@ -105,15 +105,19 @@
 
 /* Notices page header — light green, dark breadcrumb */
 .notices-page-header__breadcrumb .cds--breadcrumb-item a,
-.notices-page-header__breadcrumb .cds--breadcrumb-item::after {
+.notices-page-header__breadcrumb .cds--breadcrumb-item::after,
+.publish-page-header__breadcrumb .cds--breadcrumb-item a,
+.publish-page-header__breadcrumb .cds--breadcrumb-item::after {
   color: var(--color-ink-muted);
 }
 
-.notices-page-header__breadcrumb .cds--breadcrumb-item a:hover {
+.notices-page-header__breadcrumb .cds--breadcrumb-item a:hover,
+.publish-page-header__breadcrumb .cds--breadcrumb-item a:hover {
   color: var(--color-primary);
 }
 
-.notices-page-header__breadcrumb .cds--breadcrumb-item--current span {
+.notices-page-header__breadcrumb .cds--breadcrumb-item--current span,
+.publish-page-header__breadcrumb .cds--breadcrumb-item--current span {
   color: var(--color-ink);
 }
 
@@ -143,6 +147,62 @@
 .notices-search-bar .cds--search,
 .notices-search-bar input {
   width: 100%;
+}
+
+/* Publish service picker modal */
+.service-picker__search .cds--search,
+.service-picker__search .cds--search-input {
+  width: 100%;
+}
+
+.service-picker-card.cds--tile {
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  padding: 1rem 1.25rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.service-picker-card.cds--tile--clickable:hover,
+.service-picker-card.cds--tile--clickable:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-surface-1);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.service-picker-card.cds--tile--clickable:hover h3,
+.service-picker-card.cds--tile--clickable:focus h3 {
+  color: var(--color-primary);
+}
+
+.service-picker-card--disabled.cds--tile {
+  opacity: 0.72;
+  cursor: default;
+}
+
+/* Publish wizard — resume draft modal */
+.publish-resume-modal .cds--modal-container {
+  max-inline-size: 26rem;
+}
+
+/* Publish wizard — back button */
+.publish-wizard__back-btn.cds--btn--secondary {
+  background-color: #393939;
+  color: #ffffff;
+}
+
+.publish-wizard__back-btn.cds--btn--secondary:hover,
+.publish-wizard__back-btn.cds--btn--secondary:focus {
+  background-color: #525252;
+  color: #ffffff;
+}
+
+.publish-wizard__back-btn.cds--btn--secondary:disabled {
+  background-color: #c6c6c6;
+  color: #8d8d8d;
+}
+
+.publish-wizard__btn-spinner.cds--loading--small circle {
+  stroke-width: 10;
 }
 
 /* Mobile: center Carbon modals (default pins container to top of viewport) */

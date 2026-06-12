@@ -1,0 +1,118 @@
+// Public Notice System — Change of Name flow
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DraftStatus {
+  IN_PROGRESS
+  PUBLISHED
+}
+
+enum NoticeReason {
+  MARRIAGE
+  SPELLING_CORRECTION
+  RELIGIOUS_CULTURAL
+  FAMILY
+  OTHER
+}
+
+enum ServiceType {
+  CHANGE_OF_NAME
+}
+
+enum PaymentMethod {
+  PAYSTACK
+  BANK_TRANSFER
+  MANUAL
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+/// Guest application — draftId is the session token. Email captured first (step 2).
+model Draft {
+  id              String        @id @default(uuid()) @db.Uuid
+  email           String
+  phone           String?
+  formerName      String?
+  newName         String?
+  reason          NoticeReason?
+  reasonOther     String?
+  consentGiven    Boolean       @default(false)
+  /// Staging — copied to Notice on publish, then cleared.
+  affidavitObjectKey  String?
+  affidavitMimeType   String?
+  affidavitSizeBytes  Int?
+  affidavitUploadedAt DateTime?
+  ipHash          String?
+  fingerprintHash String?
+  status          DraftStatus   @default(IN_PROGRESS)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  transactions Transaction[]
+  notice       Notice?
+
+  @@index([email, status])
+}
+
+/// Payment ledger — channel-agnostic; multiple attempts per draft allowed.
+model Transaction {
+  id         String            @id @default(uuid()) @db.Uuid
+  reference  String            @unique
+  draftId    String            @db.Uuid
+  noticeId   String?           @db.Uuid
+  service    ServiceType       @default(CHANGE_OF_NAME)
+  method     PaymentMethod
+  amountKobo Int               @default(700000)
+  currency   String            @default("NGN")
+  status     TransactionStatus @default(PENDING)
+  paidAt     DateTime?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  draft  Draft   @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  notice Notice? @relation(fields: [noticeId], references: [id], onDelete: SetNull)
+
+  @@index([draftId])
+  @@index([noticeId])
+  @@index([status])
+}
+
+/// Change of Name notice — affidavit R2 metadata lives here (per-service table, no shared uploads table).
+model Notice {
+  id                  String       @id @default(uuid()) @db.Uuid
+  pnn                 String       @unique
+  formerName          String
+  newName             String
+  reason              NoticeReason
+  reasonOther         String?
+  email               String
+  phone               String?
+  consentGiven        Boolean      @default(false)
+  affidavitObjectKey  String?
+  affidavitMimeType   String?
+  affidavitSizeBytes  Int?
+  affidavitUploadedAt DateTime?
+  publishedAt         DateTime     @default(now())
+  verified            Boolean      @default(true)
+  draftId             String?      @unique @db.Uuid
+  createdAt           DateTime     @default(now())
+
+  draft        Draft?        @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+
+  @@index([publishedAt(sort: Desc)])
+  @@index([formerName])
+  @@index([newName])
+  @@index([email])
+}

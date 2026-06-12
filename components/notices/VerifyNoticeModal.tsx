@@ -21,11 +21,11 @@ import { useCertificatePrint } from "@/lib/useCertificatePrint";
 import { NoticeCertificate } from "./NoticeCertificate";
 
 interface VerifyNoticeModalProps {
-  open: boolean;
+  open?: boolean;
   onClose: () => void;
 }
 
-export function VerifyNoticeModal({ open, onClose }: VerifyNoticeModalProps) {
+export function VerifyNoticeModal({ open = true, onClose }: VerifyNoticeModalProps) {
   const [pnn, setPnn] = useState("");
   const [verifiedNotice, setVerifiedNotice] = useState<ChangeOfNameNotice | null>(
     null
@@ -52,26 +52,28 @@ export function VerifyNoticeModal({ open, onClose }: VerifyNoticeModalProps) {
     setVerifiedNotice(getSampleVerifiedNotice(pnn));
   }, [pnn]);
 
+  if (!open) return null;
+
   return (
     <>
       <ComposedModal
-        open={open}
+        open
         onClose={handleClose}
         size={verifiedNotice ? "md" : "sm"}
       >
         <ModalHeader
-          className="bg-canvas"
+          className="bg-[var(--color-canvas)]"
           title="Verify a public notice"
-          label="Public Notice System"
+          label="PNN"
           closeModal={handleClose}
         />
         <ModalBody
           hasScrollingContent
-          className={`p-4 ${verifiedNotice ? "bg-surface-2" : "bg-canvas"}`}
+          className={`p-4 ${verifiedNotice ? "bg-[var(--color-surface-2)]" : "bg-[var(--cds-layer-01)]"}`}
         >
           {!verifiedNotice && (
             <>
-              <p className="mb-6 text-sm leading-relaxed text-ink-muted">
+              <p className="mb-6 text-sm leading-relaxed text-[var(--color-ink-muted)]">
                 Enter the Public Notice Number (PNN) shown on the certificate, then
                 click Verify to confirm the notice is registered and view the official
                 publication record.
@@ -80,7 +82,7 @@ export function VerifyNoticeModal({ open, onClose }: VerifyNoticeModalProps) {
                 id="verify-pnn-input"
                 size="lg"
                 labelText={
-                  <span className="font-semibold text-ink">
+                  <span className="font-semibold text-[var(--color-ink)]">
                     Public Notice Number (PNN)
                   </span>
                 }
@@ -98,13 +100,13 @@ export function VerifyNoticeModal({ open, onClose }: VerifyNoticeModalProps) {
 
           {verifiedNotice && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3 border border-hairline bg-canvas px-4 py-3">
+              <div className="flex flex-wrap items-center gap-3 border border-[var(--color-hairline)] bg-[var(--color-canvas)] px-4 py-3">
                 <Tag type="green" renderIcon={CheckmarkFilled}>
                   Verified
                 </Tag>
-                <div className="min-w-0 text-sm text-ink">
+                <div className="min-w-0 text-sm text-[var(--color-ink)]">
                   <span className="font-semibold">{verifiedNotice.pnn}</span>
-                  <span className="text-ink-muted">
+                  <span className="text-[var(--color-ink-muted)]">
                     {" "}
                     · Published {formatNoticeDate(verifiedNotice.publishedAt)} ·
                     Change of Name
@@ -119,7 +121,7 @@ export function VerifyNoticeModal({ open, onClose }: VerifyNoticeModalProps) {
             </div>
           )}
         </ModalBody>
-        <ModalFooter className="bg-canvas">
+        <ModalFooter className="bg-[var(--color-canvas)]">
           <Button kind="secondary" onClick={handleClose}>
             Close
           </Button>
@@ -135,8 +137,7 @@ export function VerifyNoticeModal({ open, onClose }: VerifyNoticeModalProps) {
         </ModalFooter>
       </ComposedModal>
 
-      {open &&
-        verifiedNotice &&
+      {verifiedNotice &&
         typeof document !== "undefined" &&
         createPortal(
           <div data-certificate-print-portal className="hidden" aria-hidden="true">

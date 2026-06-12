@@ -4,7 +4,6 @@ const footerLinks = [
   { href: "#", label: "Privacy" },
   { href: "#", label: "Terms of Use" },
   { href: "#", label: "Accessibility" },
-  { href: "#", label: "Contact" },
 ];
 
 export function SiteFooter() {
@@ -13,7 +12,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-7xl px-6 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p className="site-footer__copyright order-2 text-xs tracking-[0.16px] text-white/50 md:order-1 md:text-sm">
-            © {new Date().getFullYear()} Federal Republic of Nigeria — Public Notice System
+            © {new Date().getFullYear()} Federal Republic of Nigeria — PNN
           </p>
 
           <nav
