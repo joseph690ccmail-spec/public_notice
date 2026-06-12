@@ -49,6 +49,23 @@ export const paginationQuerySchema = z
   })
   .strict();
 
+export const adminPaginationQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict();
+
+export const adminPublicationsQuerySchema = adminPaginationQuerySchema.extend({
+  search: z.string().trim().max(120).optional(),
+  verified: z.enum(["all", "yes", "no"]).default("all"),
+});
+
+export const adminPaymentsQuerySchema = adminPaginationQuerySchema.extend({
+  search: z.string().trim().max(120).optional(),
+  status: z.enum(["all", "PENDING", "SUCCESS", "FAILED"]).default("all"),
+});
+
 export const draftInitBodySchema = z
   .object({
     email: z.string().trim().email().max(254),

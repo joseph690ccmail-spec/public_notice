@@ -4,7 +4,11 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@carbon/react";
 
-export function AdminSignOutButton() {
+interface AdminSignOutButtonProps {
+  kind?: "secondary" | "utility";
+}
+
+export function AdminSignOutButton({ kind = "secondary" }: AdminSignOutButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -18,6 +22,19 @@ export function AdminSignOutButton() {
       setLoading(false);
     }
   };
+
+  if (kind === "utility") {
+    return (
+      <button
+        type="button"
+        className="admin-utility-bar__sign-out text-xs tracking-[0.16px] text-white/75 transition-colors hover:text-white disabled:opacity-60"
+        disabled={loading}
+        onClick={() => void handleSignOut()}
+      >
+        {loading ? "Signing out…" : "Sign out"}
+      </button>
+    );
+  }
 
   return (
     <Button kind="secondary" disabled={loading} onClick={() => void handleSignOut()}>

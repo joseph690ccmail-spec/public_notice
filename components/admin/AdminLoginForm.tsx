@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
+import { ArrowRight } from "@carbon/icons-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, PasswordInput, TextInput } from "@carbon/react";
 import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
-import { FieldError } from "@/components/publish/wizard/ui/FieldError";
+import { NavAnchor } from "@/components/site/NavAnchor";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -47,56 +49,82 @@ export function AdminLoginForm() {
   };
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-medium tracking-tight text-[var(--color-ink)]">
-          Admin sign in
+    <>
+      <div className="admin-login-shell__intro">
+        <Image
+          src="/assets/img/seal.svg"
+          alt="Federal Republic of Nigeria coat of arms"
+          width={80}
+          height={80}
+          priority
+          className="admin-login-shell__emblem"
+        />
+        <h1
+          className="admin-login-shell__title text-4xl"
+          style={{ fontFamily: "var(--font-plex-sans), system-ui" }}
+        >
+          Log in
         </h1>
-        <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
-          Sign in to manage public notices and review publications.
+        <p className="admin-login-shell__lede">
+          Authorized access only.{" "}
+          <NavAnchor href="/" className="admin-login-shell__inline-link">
+            Return to public site
+          </NavAnchor>
         </p>
       </div>
 
-      <TextInput
-        id="admin-email"
-        type="email"
-        labelText="Email"
-        placeholder="admin@publicnotice.ng"
-        value={email}
-        onChange={(event) => {
-          setEmail(event.target.value);
-          if (error) setError(null);
-        }}
-        disabled={loading}
-        invalid={Boolean(error)}
-        autoComplete="username"
-      />
+      <form onSubmit={(event) => void handleSubmit(event)} className="admin-login-shell__form">
+        <div className="admin-login-shell__fields">
+          <p className="admin-login-shell__section-label">Continue with admin credentials</p>
 
-      <div>
-        <PasswordInput
-          id="admin-password"
-          labelText="Password"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value);
-            if (error) setError(null);
-          }}
-          disabled={loading}
-          invalid={Boolean(error)}
-          autoComplete="current-password"
-        />
-        <FieldError message={error ?? undefined} />
-      </div>
+          <TextInput
+            id="admin-email"
+            type="email"
+            size="lg"
+            labelText="Email"
+            placeholder="admin@publicnotice.ng"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (error) setError(null);
+            }}
+            disabled={loading}
+            invalid={Boolean(error)}
+            autoComplete="username"
+          />
 
-      <Button
-        type="submit"
-        kind="primary"
-        className="home-search__btn w-full max-w-none"
-        disabled={loading || !email.trim() || !password}
-      >
-        <ButtonLabel loading={loading}>Sign in</ButtonLabel>
-      </Button>
-    </form>
+          <PasswordInput
+            id="admin-password"
+            size="lg"
+            labelText="Password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              if (error) setError(null);
+            }}
+            disabled={loading}
+            invalid={Boolean(error)}
+            invalidText={error ?? undefined}
+            autoComplete="current-password"
+          />
+
+          <Button
+            type="submit"
+            kind="primary"
+            size="lg"
+            renderIcon={ArrowRight}
+            className="admin-login-shell__submit home-search__btn"
+            disabled={loading || !email.trim() || !password}
+          >
+            <ButtonLabel loading={loading}>Login</ButtonLabel>
+          </Button>
+        </div>
+      </form>
+
+      <p className="admin-login-shell__help">
+        Need help? Contact your system administrator.
+      </p>
+    </>
   );
 }

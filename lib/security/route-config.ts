@@ -115,6 +115,22 @@ export const API_ROUTE_SECURITY = {
     methods: ["GET"],
     rateLimit: "global",
   },
+  "GET /api/v1/admin/publications": {
+    methods: ["GET"],
+    rateLimit: "global",
+  },
+  "GET /api/v1/admin/publications/:pnn": {
+    methods: ["GET"],
+    rateLimit: "global",
+  },
+  "GET /api/v1/admin/payments": {
+    methods: ["GET"],
+    rateLimit: "global",
+  },
+  "GET /api/v1/admin/payments/:reference": {
+    methods: ["GET"],
+    rateLimit: "global",
+  },
 } as const satisfies Record<string, RouteSecurityProfile>;
 
 export type ApiRouteKey = keyof typeof API_ROUTE_SECURITY;
