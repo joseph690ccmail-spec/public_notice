@@ -1,4 +1,8 @@
-export type IdempotencyScope = "paystack_webhook" | "payment_verify" | "notice_publish";
+export type IdempotencyScope =
+  | "paystack_webhook"
+  | "payment_verify"
+  | "notice_publish"
+  | "certificate_email";
 
 export interface IdempotencyRecord {
   key: string;

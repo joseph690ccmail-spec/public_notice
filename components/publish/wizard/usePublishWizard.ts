@@ -12,7 +12,6 @@ import {
   pollForPublishedNotice,
   isUnavailableDraftSessionError,
   PublishApiError,
-  sendSaveForLaterLink,
   verifyAffidavitDraft,
   verifyPayment,
 } from "@/lib/api/client";
@@ -67,8 +66,6 @@ export function usePublishWizard() {
   const [affidavitVerificationFailed, setAffidavitVerificationFailed] = useState(false);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [pendingResumeDraft, setPendingResumeDraft] = useState<DraftResponse | null>(null);
-  const [saveLinkSent, setSaveLinkSent] = useState(false);
-  const [saveLinkBusy, setSaveLinkBusy] = useState(false);
   const [publishedNotice, setPublishedNotice] = useState<PublicNoticeResponse | null>(null);
   const [publishedEmail, setPublishedEmail] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -238,6 +235,11 @@ export function usePublishWizard() {
     );
 
     if (!draftIdToRestore) {
+      if (!isPaymentReturn) {
+        setPublishedNotice(null);
+        setPublishedEmail(null);
+        setStep(0);
+      }
       if (stored?.email) {
         setHasStoredSession(true);
         setForm((prev) => (prev.email ? prev : { ...prev, email: stored.email }));
@@ -370,7 +372,6 @@ export function usePublishWizard() {
     setHasAffidavit(false);
     setDocumentFile(null);
     setAffidavitVerificationFailed(false);
-    setSaveLinkSent(false);
     setPendingResumeDraft(null);
     setResumeModalOpen(false);
     setHasStoredSession(false);
@@ -557,21 +558,25 @@ export function usePublishWizard() {
     }
   }, [draftId, form, syncDraftFields, validateCurrentStep]);
 
-  const handleSaveForLater = useCallback(async () => {
-    if (!draftId) return;
-    setSaveLinkBusy(true);
+  const handleReturnHome = useCallback(() => {
+    clearDraftSession();
+    sessionBootstrapped.current = false;
+    setPublishedNotice(null);
+    setPublishedEmail(null);
+    setPublishing(false);
+    setStep(0);
+    setForm(initialPublishFormData);
+    setErrors({});
+    setDraftId(null);
+    setHasAffidavit(false);
+    setDocumentFile(null);
+    setAffidavitVerificationFailed(false);
+    setPendingResumeDraft(null);
+    setResumeModalOpen(false);
+    setHasStoredSession(false);
     setApiError(null);
-    try {
-      await sendSaveForLaterLink(draftId);
-      setSaveLinkSent(true);
-    } catch (error) {
-      setApiError(
-        error instanceof PublishApiError ? error.message : "Could not send resume link."
-      );
-    } finally {
-      setSaveLinkBusy(false);
-    }
-  }, [draftId]);
+    router.replace("/");
+  }, [router]);
 
   const clearDocument = useCallback(() => {
     setDocumentFile(null);
@@ -600,8 +605,6 @@ export function usePublishWizard() {
     verifyingAffidavitDescription: AFFIDAVIT_VERIFYING_DESCRIPTION,
     resumeModalOpen,
     setResumeModalOpen,
-    saveLinkSent,
-    saveLinkBusy,
     publishedNotice,
     publishedEmail,
     publishing,
@@ -614,7 +617,7 @@ export function usePublishWizard() {
     handleStartAfresh,
     handleResumeChoice,
     handleFileAdd,
-    handleSaveForLater,
+    handleReturnHome,
     clearDocument,
     replaceDocument,
   };

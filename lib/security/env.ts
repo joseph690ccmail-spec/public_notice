@@ -32,6 +32,15 @@ const envSchema = z.object({
   /** Public app URL for resume links in emails (e.g. https://publicnotice.ng). */
   APP_BASE_URL: z.string().optional(),
 
+  /** Resend API key for transactional email (server-side only). */
+  RESEND_API_KEY: z.string().optional(),
+
+  /** Alias for RESEND_API_KEY (legacy / SMTP naming). */
+  SMTP_API_KEY: z.string().optional(),
+
+  /** Sender address for outbound email, e.g. Public Notice System <noreply@yourdomain.com>. */
+  EMAIL_FROM: z.string().optional(),
+
   /** Optional Redis URL for distributed rate limiting / idempotency. */
   REDIS_URL: z.string().optional(),
 

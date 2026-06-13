@@ -1,29 +1,19 @@
 import React from "react";
-import { Checkmark, Email, Link as LinkIcon } from "@carbon/icons-react";
-import { Button, Checkbox, InlineNotification } from "@carbon/react";
+import { Checkbox } from "@carbon/react";
 import { ApplicationSummary } from "@/components/publish/wizard/ui/ApplicationSummary";
-import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
 import { FieldError } from "@/components/publish/wizard/ui/FieldError";
 import { PUBLICATION_FEE_NGN, type PublishFormData, type PublishFormErrors } from "@/lib/publish";
 
 interface PayAndPublishStepProps {
   form: PublishFormData;
   errors: PublishFormErrors;
-  draftId: string | null;
-  saveLinkSent: boolean;
-  saveLinkBusy: boolean;
   onFieldChange: <K extends keyof PublishFormData>(key: K, value: PublishFormData[K]) => void;
-  onSaveForLater: () => void;
 }
 
 export function PayAndPublishStep({
   form,
   errors,
-  draftId,
-  saveLinkSent,
-  saveLinkBusy,
   onFieldChange,
-  onSaveForLater,
 }: PayAndPublishStepProps) {
   return (
     <div className="space-y-5">
@@ -59,27 +49,6 @@ export function PayAndPublishStep({
         invalid={Boolean(errors.consentGiven)}
       />
       <FieldError message={errors.consentGiven} />
-
-      {draftId && (
-        <div className="flex flex-col gap-2 border-t border-[var(--color-hairline)] pt-4 sm:flex-row sm:items-center">
-          <Button
-            kind="tertiary"
-            renderIcon={saveLinkBusy ? undefined : saveLinkSent ? Checkmark : Email}
-            disabled={saveLinkBusy || saveLinkSent}
-            onClick={onSaveForLater}
-          >
-            <ButtonLabel loading={saveLinkBusy}>
-              {saveLinkSent ? "Resume link sent" : "Save for later"}
-            </ButtonLabel>
-          </Button>
-          {saveLinkSent && (
-            <p className="flex items-center gap-1 text-xs text-[var(--color-ink-muted)]">
-              <LinkIcon size={14} aria-hidden />
-              Check your inbox for a link to resume this application.
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

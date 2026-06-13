@@ -2,7 +2,7 @@ import type { ChangeOfNameNotice, NoticeReason } from "@/lib/notices";
 import { CHANGE_OF_NAME_FEE_KOBO } from "@/lib/payments/constants";
 
 export const LEGAL_DISCLAIMER =
-  "This system provides fast, affordable, and verifiable digital public notice publication. It provides a secure digital registry for verifiable public notices in Nigeria. While it facilitates accessible and permanent publication, it does not supersede the statutory requirements for a valid legal name change, including a Sworn Affidavit from a Court of Law";
+  "This system provides fast, affordable, and verifiable digital public notice publication through a secure national registry. While publication here is permanent and publicly verifiable, it does not replace the statutory requirements for a valid legal name change, including a sworn affidavit from a court of law.";
 
 export const PUBLISH_STEPS = [
   { id: "email", label: "Get started" },

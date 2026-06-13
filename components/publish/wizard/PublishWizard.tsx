@@ -24,6 +24,7 @@ export function PublishWizard() {
       <PublishedSuccessScreen
         notice={wizard.publishedNotice}
         email={wizard.publishedEmail ?? wizard.form.email}
+        onReturnHome={wizard.handleReturnHome}
       />
     );
   }

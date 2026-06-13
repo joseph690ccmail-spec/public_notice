@@ -56,11 +56,7 @@ export function PublishWizardStepContent({ wizard }: PublishWizardStepContentPro
         <PayAndPublishStep
           form={wizard.form}
           errors={wizard.errors}
-          draftId={wizard.draftId}
-          saveLinkSent={wizard.saveLinkSent}
-          saveLinkBusy={wizard.saveLinkBusy}
           onFieldChange={wizard.updateField}
-          onSaveForLater={wizard.handleSaveForLater}
         />
       );
     default:

@@ -10,7 +10,7 @@ export function buildDraftResumeUrl(draftId: string): string {
 }
 
 /**
- * MVP stub — logs in development. Swap for Resend/SendGrid/SES when ready.
+ * Logs the resume link in development. No email is sent.
  */
 export async function sendDraftResumeLink(
   email: string,
@@ -22,6 +22,5 @@ export async function sendDraftResumeLink(
     console.info(`[resume-link] To: ${email} | ${resumeUrl}`);
   }
 
-  // TODO: integrate transactional email provider
-  return { sent: true, resumeUrl };
+  return { sent: false, resumeUrl };
 }

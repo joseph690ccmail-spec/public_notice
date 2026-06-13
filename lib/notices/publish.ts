@@ -1,9 +1,10 @@
 import type { Draft, Notice } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { ApiError } from "@/lib/api/errors";
 import { prisma } from "@/lib/db";
 import {
-  buildNoticeVerifyUrl,
-  sendPublishNotifications,
+  deliverCertificateEmailOnce,
+  type PublishNotificationResult,
 } from "@/lib/notifications/publish";
 import { generateUniquePnn } from "@/lib/notices/pnn";
 import { CHANGE_OF_NAME_FEE_KOBO } from "@/lib/payments/constants";
@@ -56,19 +57,72 @@ function noticeFromDraft(draft: Draft, pnn: string) {
   };
 }
 
-function alreadyPublishedResult(notice: Notice, reference: string): PublishFromPaymentResult {
+function notificationInputFromNotice(notice: Notice) {
+  return {
+    pnn: notice.pnn,
+    email: notice.email,
+    phone: notice.phone,
+    formerName: notice.formerName,
+    newName: notice.newName,
+  };
+}
+
+function buildPublishResult(
+  notice: Notice,
+  reference: string,
+  alreadyPublished: boolean,
+  notifications: PublishNotificationResult
+): PublishFromPaymentResult {
   return {
     pnn: notice.pnn,
     noticeId: notice.id,
     draftId: notice.draftId!,
     reference,
-    alreadyPublished: true,
+    alreadyPublished,
     notifications: {
-      emailSent: false,
-      smsSent: false,
-      verifyUrl: buildNoticeVerifyUrl(notice.pnn),
+      emailSent: notifications.emailSent,
+      smsSent: notifications.smsSent,
+      verifyUrl: notifications.verifyUrl,
     },
   };
+}
+
+async function ensureTransactionLinked(
+  transactionId: string,
+  noticeId: string,
+  paidAt: Date
+): Promise<void> {
+  await prisma.transaction.update({
+    where: { id: transactionId },
+    data: {
+      status: "SUCCESS",
+      noticeId,
+      paidAt,
+    },
+  });
+}
+
+async function finalizePublishedNotice(
+  notice: Notice,
+  reference: string,
+  transactionId: string,
+  paidAt: Date,
+  alreadyPublished: boolean
+): Promise<PublishFromPaymentResult> {
+  await ensureTransactionLinked(transactionId, notice.id, paidAt);
+
+  const notifications = await deliverCertificateEmailOnce(
+    notice.id,
+    notificationInputFromNotice(notice)
+  );
+
+  return buildPublishResult(notice, reference, alreadyPublished, notifications);
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
+  );
 }
 
 export async function publishNoticeFromPayment(
@@ -97,71 +151,64 @@ export async function publishNoticeFromPayment(
     throw new ApiError("NOT_FOUND", "Draft not found for payment.");
   }
 
+  const paidAt = transaction.paidAt ?? new Date();
+
   if (draft.notice) {
-    if (transaction.status !== "SUCCESS" || !transaction.noticeId) {
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: "SUCCESS",
-          noticeId: draft.notice.id,
-          paidAt: transaction.paidAt ?? new Date(),
-        },
-      });
-    }
-    return alreadyPublishedResult(draft.notice, reference);
+    return finalizePublishedNotice(draft.notice, reference, transaction.id, paidAt, true);
   }
 
   assertPublishableDraft(draft);
 
   const pnn = await generateUniquePnn();
-  const paidAt = new Date();
 
-  const notice = await prisma.$transaction(async (tx) => {
-    const created = await tx.notice.create({
-      data: noticeFromDraft(draft, pnn),
+  try {
+    const notice = await prisma.$transaction(async (tx) => {
+      const created = await tx.notice.create({
+        data: noticeFromDraft(draft, pnn),
+      });
+
+      await tx.draft.update({
+        where: { id: draft.id },
+        data: {
+          status: "PUBLISHED",
+          affidavitObjectKey: null,
+          affidavitMimeType: null,
+          affidavitSizeBytes: null,
+          affidavitUploadedAt: null,
+        },
+      });
+
+      await tx.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: "SUCCESS",
+          noticeId: created.id,
+          paidAt,
+        },
+      });
+
+      return created;
     });
 
-    await tx.draft.update({
-      where: { id: draft.id },
-      data: {
-        status: "PUBLISHED",
-        affidavitObjectKey: null,
-        affidavitMimeType: null,
-        affidavitSizeBytes: null,
-        affidavitUploadedAt: null,
-      },
+    const notifications = await deliverCertificateEmailOnce(
+      notice.id,
+      notificationInputFromNotice(notice)
+    );
+
+    return buildPublishResult(notice, reference, false, notifications);
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+
+    const existing = await prisma.notice.findUnique({
+      where: { draftId: draft.id },
     });
 
-    await tx.transaction.update({
-      where: { id: transaction.id },
-      data: {
-        status: "SUCCESS",
-        noticeId: created.id,
-        paidAt,
-      },
-    });
+    if (!existing) {
+      throw error;
+    }
 
-    return created;
-  });
-
-  const notifications = await sendPublishNotifications({
-    pnn: notice.pnn,
-    email: notice.email,
-    phone: notice.phone,
-    formerName: notice.formerName,
-    newName: notice.newName,
-  });
-
-  return {
-    pnn: notice.pnn,
-    noticeId: notice.id,
-    draftId: draft.id,
-    reference,
-    alreadyPublished: false,
-    notifications: {
-      emailSent: notifications.emailSent,
-      smsSent: notifications.smsSent,
-      verifyUrl: notifications.verifyUrl,
-    },
-  };
+    return finalizePublishedNotice(existing, reference, transaction.id, paidAt, true);
+  }
 }

@@ -172,15 +172,6 @@ export async function verifyPayment(reference: string): Promise<PaymentVerifyRes
   let publication = resolvePublishedNotice(transaction);
 
   if (paid) {
-    status = "SUCCESS";
-    await prisma.transaction.update({
-      where: { id: transaction.id },
-      data: {
-        status: "SUCCESS",
-        paidAt: paystack.paid_at ? new Date(paystack.paid_at) : new Date(),
-      },
-    });
-
     if (!publication) {
       publication = await ensureNoticePublished(reference, {
         reference,
@@ -190,6 +181,8 @@ export async function verifyPayment(reference: string): Promise<PaymentVerifyRes
         metadata: paystack.metadata,
       });
     }
+
+    status = "SUCCESS";
   } else if (paystack.status === "failed" && transaction.status === "PENDING") {
     status = "FAILED";
     await prisma.transaction.update({

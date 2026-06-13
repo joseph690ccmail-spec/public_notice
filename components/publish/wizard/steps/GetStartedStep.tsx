@@ -69,7 +69,7 @@ export function GetStartedStep({
         lowContrast
         hideCloseButton
         title="Auto-save enabled"
-        subtitle="We save your application as you go. Use Save for Later on later steps to email yourself a resume link."
+        subtitle="Your progress is saved automatically on this device as you complete each step. No account or password is required."
       />
     </div>
   );
