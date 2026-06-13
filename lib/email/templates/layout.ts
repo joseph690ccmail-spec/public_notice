@@ -26,8 +26,7 @@ function footerLinks(): string {
   return `<a href="${base}" rel="noopener noreferrer" style="${linkStyle}" target="_blank">Public Notice System</a>
     &nbsp;|&nbsp;
     <a href="${base}/notices" rel="noopener noreferrer" style="${linkStyle}" target="_blank">Verify a notice</a>
-    &nbsp;|&nbsp;
-    <a href="${base}" rel="noopener noreferrer" style="${linkStyle}" target="_blank">Help</a>`;
+    &nbsp;|&nbsp;`;
 }
 
 export function renderEmailLayout({
@@ -55,11 +54,11 @@ export function renderEmailLayout({
               <tbody>
                 <tr>
                   <td style="background-color:${CANVAS};padding:24px 32px 0 32px">
-                    <img src="${logoUrl}" width="48" height="48" alt="Public Notice System" title="Public Notice System" style="display:block">
+                    <img src="${logoUrl}" width="85" height="85" alt="Public Notice System" title="Public Notice System" style="display:block">
                   </td>
                 </tr>
                 <tr>
-                  <td style="background-color:${CANVAS};padding:40px 32px 48px 32px">
+                  <td style="background-color:${CANVAS};padding:25px 32px 48px 32px">
                     <div style="color:${INK};font-family:${FONT};font-size:42px;font-weight:300;line-height:50px">
                       ${headline}
                     </div>

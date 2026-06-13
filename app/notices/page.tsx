@@ -1,15 +1,23 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DocumentView } from "@carbon/icons-react";
 import { Button, Loading, Pagination, Tile } from "@carbon/react";
 import { NoticeCertificateModal } from "@/components/notices/NoticeCertificateModal";
 import { ButtonLabel } from "@/components/publish/wizard/ui/ButtonLabel";
 import { NoticesPageHeader } from "@/components/site/NoticesPageHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { listNotices, PublishApiError, searchNotices } from "@/lib/api/client";
+import {
+  getNoticeByPnn,
+  listNotices,
+  PublishApiError,
+  searchNotices,
+} from "@/lib/api/client";
 import { formatNoticeDate } from "@/lib/notices";
 import type { PublicNoticeResponse } from "@/lib/notices/dto";
+
+const PNN_PATTERN = /^PNN-[A-Z0-9]{6}$/i;
 
 function NoticeBody({ notice }: { notice: PublicNoticeResponse }) {
   return (
@@ -73,15 +81,20 @@ function NoticeCard({
   );
 }
 
-export default function RecentPublicationsPage() {
+function RecentPublicationsPageContent() {
+  const searchParams = useSearchParams();
+  const appliedQueryParamRef = useRef<string | null>(null);
+  const pnnFromUrl = searchParams.get("pnn")?.trim() ?? "";
+  const hasPnnQuery = pnnFromUrl.length > 0;
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(hasPnnQuery ? pnnFromUrl.toUpperCase() : "");
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
   const [items, setItems] = useState<PublicNoticeResponse[]>([]);
   const [totalItems, setTotalItems] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [loading, setLoading] = useState(!hasPnnQuery);
+  const [searchLoading, setSearchLoading] = useState(hasPnnQuery);
   const [error, setError] = useState<string | null>(null);
   const [selectedNotice, setSelectedNotice] = useState<PublicNoticeResponse | null>(null);
   const [certificateOpen, setCertificateOpen] = useState(false);
@@ -109,57 +122,92 @@ export default function RecentPublicationsPage() {
 
   useEffect(() => {
     if (activeSearch) return;
+    if (searchParams.get("pnn")?.trim()) return;
     void loadNotices(page, pageSize);
-  }, [activeSearch, loadNotices, page, pageSize]);
+  }, [activeSearch, loadNotices, page, pageSize, searchParams]);
+
+  const openCertificate = useCallback((notice: PublicNoticeResponse) => {
+    setSelectedNotice(notice);
+    setCertificateOpen(true);
+  }, []);
+
+  const runSearch = useCallback(
+    async (rawQuery: string, options?: { openCertificateIfSingle?: boolean }) => {
+      const trimmed = rawQuery.trim();
+
+      if (!trimmed) {
+        setActiveSearch(null);
+        setPage(1);
+        setError(null);
+        return;
+      }
+
+      if (trimmed.length < 2) {
+        setError("Enter at least 2 characters to search.");
+        return;
+      }
+
+      setSearchLoading(true);
+      setError(null);
+
+      try {
+        if (PNN_PATTERN.test(trimmed)) {
+          const notice = await getNoticeByPnn(trimmed.toUpperCase());
+          setActiveSearch(notice.pnn);
+          setItems([notice]);
+          setTotalItems(1);
+          setPage(1);
+          if (options?.openCertificateIfSingle) {
+            openCertificate(notice);
+          }
+          return;
+        }
+
+        const result = await searchNotices(trimmed);
+        setActiveSearch(result.query);
+        setItems(result.items);
+        setTotalItems(result.items.length);
+        setPage(1);
+
+        if (options?.openCertificateIfSingle && result.items.length === 1) {
+          openCertificate(result.items[0]);
+        }
+      } catch (err) {
+        setActiveSearch(null);
+        setItems([]);
+        setTotalItems(0);
+        setError(
+          err instanceof PublishApiError
+            ? err.message
+            : "Could not search notices. Please try again."
+        );
+      } finally {
+        setSearchLoading(false);
+      }
+    },
+    [openCertificate]
+  );
 
   const handleSearch = useCallback(async () => {
-    const trimmed = searchQuery.trim();
+    await runSearch(searchQuery);
+  }, [runSearch, searchQuery]);
 
-    if (!trimmed) {
-      setActiveSearch(null);
-      setPage(1);
-      setError(null);
-      return;
-    }
+  useEffect(() => {
+    const pnn = searchParams.get("pnn")?.trim();
+    if (!pnn || appliedQueryParamRef.current === pnn) return;
 
-    if (trimmed.length < 2) {
-      setError("Enter at least 2 characters to search.");
-      return;
-    }
-
+    appliedQueryParamRef.current = pnn;
+    const normalized = pnn.toUpperCase();
+    setSearchQuery(normalized);
     setSearchLoading(true);
-    setError(null);
-
-    try {
-      const result = await searchNotices(trimmed);
-      setActiveSearch(result.query);
-      setItems(result.items);
-      setTotalItems(result.items.length);
-      setPage(1);
-    } catch (err) {
-      setActiveSearch(null);
-      setItems([]);
-      setTotalItems(0);
-      setError(
-        err instanceof PublishApiError
-          ? err.message
-          : "Could not search notices. Please try again."
-      );
-    } finally {
-      setSearchLoading(false);
-    }
-  }, [searchQuery]);
+    void runSearch(normalized, { openCertificateIfSingle: true });
+  }, [runSearch, searchParams]);
 
   const pageNotices = useMemo(() => {
     if (!activeSearch) return items;
     const start = (page - 1) * pageSize;
     return items.slice(start, start + pageSize);
   }, [activeSearch, items, page, pageSize]);
-
-  const openCertificate = (notice: PublicNoticeResponse) => {
-    setSelectedNotice(notice);
-    setCertificateOpen(true);
-  };
 
   const closeCertificate = () => {
     setCertificateOpen(false);
@@ -220,9 +268,12 @@ export default function RecentPublicationsPage() {
             </p>
           )}
 
-          {loading && !searchLoading ? (
+          {isLoading ? (
             <div className="flex min-h-[12rem] items-center justify-center border border-[var(--color-hairline)] bg-white">
-              <Loading withOverlay={false} description="Loading notices…" />
+              <Loading
+                withOverlay={false}
+                description={searchLoading ? "Finding notice…" : "Loading notices…"}
+              />
             </div>
           ) : pageNotices.length === 0 ? (
             <Tile className="notice-card">
@@ -266,5 +317,25 @@ export default function RecentPublicationsPage() {
         onClose={closeCertificate}
       />
     </div>
+  );
+}
+
+function NoticesPageFallback() {
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--color-canvas)] text-[var(--color-ink)] font-sans">
+      <NoticesPageHeader />
+      <main className="flex flex-1 items-center justify-center">
+        <Loading withOverlay={false} description="Loading notices…" />
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+
+export default function RecentPublicationsPage() {
+  return (
+    <Suspense fallback={<NoticesPageFallback />}>
+      <RecentPublicationsPageContent />
+    </Suspense>
   );
 }
